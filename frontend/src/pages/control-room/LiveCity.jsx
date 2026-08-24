@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
-import { Map, Activity, Users, ArrowUpRight, ArrowDownRight, Layers } from 'lucide-react'
+import { Activity, ArrowUpRight, ArrowDownRight, Layers, Eye } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { Panel } from '../../components/ui/Panel'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { LoadingState } from '../../components/shared/LoadingState'
 import { ErrorState } from '../../components/shared/ErrorState'
+import { MumbaiMap } from '../../components/map/MumbaiMap'
 import { getZones, getMapState } from '../../lib/api'
 
 export default function LiveCity() {
   const [zones, setZones] = useState([])
-  const [mapState, setMapState] = useState(null)
+  const [mapData, setMapData] = useState(null)
   const [selectedZone, setSelectedZone] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -18,15 +19,18 @@ export default function LiveCity() {
     try {
       setLoading(true)
       setError(null)
-      const [zonesData, mapData] = await Promise.all([getZones(), getMapState()])
+      const [zonesData, mapState] = await Promise.all([
+        getZones(),
+        getMapState()
+      ])
       setZones(zonesData)
-      setMapState(mapData)
+      setMapData(mapState)
       if (zonesData.length > 0) {
         setSelectedZone(zonesData[0])
       }
     } catch (err) {
-      console.error('Failed to fetch live city data:', err)
-      setError('Failed to load live city data')
+      console.error('Failed to fetch live city telemetry:', err)
+      setError('Failed to load live city telemetry')
     } finally {
       setLoading(false)
     }
@@ -36,38 +40,59 @@ export default function LiveCity() {
     fetchData()
   }, [])
 
+  const handleMapZoneSelect = (zoneProps) => {
+    const found = zones.find(z => z.id === zoneProps.id)
+    if (found) {
+      setSelectedZone(found)
+    }
+  }
+
   if (loading) return <LoadingState message="Loading live city telemetry..." />
   if (error) return <ErrorState title="Telemetry unavailable" message={error} onRetry={fetchData} />
 
   return (
-    <div className="space-y-5">
-      {/* Header Info */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-surface border border-border rounded-card p-4">
+    <div className="space-y-4 sm:space-y-5 max-w-[1600px] mx-auto">
+      {/* Header telemetry summary */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-surface border border-border rounded-card p-3.5 sm:p-4 shadow-subtle">
         <div>
-          <h2 className="text-base font-bold text-text-primary">Mumbai Operational Zones Telemetry</h2>
-          <p className="text-[12px] text-text-secondary">Real-time calibrated crowd pressure across 11 monitored administrative corridors</p>
+          <h2 className="text-sm sm:text-base font-bold text-text-primary">Mumbai Operational Zones Telemetry</h2>
+          <p className="text-[11px] sm:text-[12px] text-text-secondary">Real-time calibrated crowd pressure across 11 monitored administrative corridors</p>
         </div>
-        <div className="flex items-center gap-3 text-[12px] text-text-muted">
-          <span className="flex items-center gap-1.5 font-medium text-text-primary">
-            <Layers className="w-4 h-4 text-terracotta" />
-            {mapState?.locations?.length || 0} Key Landmarks
+        <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-[12px] text-text-muted">
+          <span className="flex items-center gap-1 font-medium text-text-primary">
+            <Layers className="w-3.5 h-3.5 text-terracotta" />
+            11 Zones Active
           </span>
           <span>&middot;</span>
-          <span>{mapState?.stations?.length || 0} Transit Nodes</span>
+          <span>{mapData?.stations?.length || 11} Transit Stations</span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Zones Grid */}
-        <div className="lg:col-span-8 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+      {/* Embedded Interactive Map */}
+      <div className="min-h-[360px] sm:min-h-[420px] lg:min-h-[460px] rounded-card overflow-hidden">
+        <MumbaiMap
+          mapData={mapData}
+          selectedZoneId={selectedZone?.id}
+          onSelectZone={handleMapZoneSelect}
+          className="shadow-subtle"
+        />
+      </div>
+
+      {/* Zones Grid + Drilldown */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
+        {/* Zones List (8 Cols Desktop, Full Width Mobile) */}
+        <div className="lg:col-span-8 space-y-3">
+          <h3 className="text-xs uppercase font-bold text-text-muted tracking-wider px-0.5">
+            Administrative Corridors Overview
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-3">
             {zones.map((zone) => {
               const isSelected = selectedZone?.id === zone.id
               return (
                 <div
                   key={zone.id}
                   onClick={() => setSelectedZone(zone)}
-                  className={`bg-surface border rounded-card p-3.5 cursor-pointer transition-all duration-150 shadow-subtle ${
+                  className={`bg-surface border rounded-card p-3 sm:p-3.5 cursor-pointer transition-all duration-150 shadow-subtle ${
                     isSelected 
                       ? 'border-terracotta ring-1 ring-terracotta bg-terracotta-soft/20' 
                       : 'border-border hover:border-border-strong hover:bg-surface-muted/30'
@@ -84,20 +109,24 @@ export default function LiveCity() {
                   <div className="flex items-baseline justify-between mt-3">
                     <div>
                       <span className="text-[10px] uppercase text-text-muted font-medium block">Pressure</span>
-                      <span className="text-[20px] font-bold text-text-primary">{zone.population_pressure}<span className="text-[12px] font-normal text-text-muted">/100</span></span>
+                      <span className="text-[19px] sm:text-[20px] font-bold text-text-primary">
+                        {zone.population_pressure}<span className="text-[11px] font-normal text-text-muted">/100</span>
+                      </span>
                     </div>
                     <div className="text-right">
                       <span className="text-[10px] uppercase text-text-muted font-medium block">Est. Density</span>
-                      <span className="text-[13px] font-semibold text-text-secondary">{zone.current_people?.toLocaleString() || '—'}</span>
+                      <span className="text-[12px] sm:text-[13px] font-semibold text-text-secondary">
+                        {zone.current_people?.toLocaleString() || '—'}
+                      </span>
                     </div>
                   </div>
 
                   {/* Flow rates */}
-                  <div className="flex items-center justify-between text-[11px] pt-2 mt-2 border-t border-border/60 text-text-muted">
-                    <span className="flex items-center text-critical">
+                  <div className="flex items-center justify-between text-[10.5px] pt-2 mt-2 border-t border-border/60 text-text-muted">
+                    <span className="flex items-center text-critical font-medium">
                       <ArrowUpRight className="w-3 h-3 mr-0.5" /> +{zone.arrival_rate?.toLocaleString()}/h
                     </span>
-                    <span className="flex items-center text-low">
+                    <span className="flex items-center text-low font-medium">
                       <ArrowDownRight className="w-3 h-3 mr-0.5" /> -{zone.departure_rate?.toLocaleString()}/h
                     </span>
                   </div>
@@ -107,20 +136,20 @@ export default function LiveCity() {
           </div>
         </div>
 
-        {/* Selected Zone Drilldown Panel */}
+        {/* Selected Zone Inspection Panel (4 Cols Desktop, Below on Mobile) */}
         <div className="lg:col-span-4 flex flex-col">
           {selectedZone ? (
-            <Panel title={`Zone Detail: ${selectedZone.name}`} className="flex-1">
-              <div className="space-y-4">
+            <Panel title={`Zone Details: ${selectedZone.name}`} className="flex-1">
+              <div className="space-y-3.5">
                 <div className="flex justify-between items-center bg-surface-muted/50 p-3 rounded-card-sm border border-border/80">
                   <div>
                     <span className="text-[10px] uppercase tracking-wider text-text-muted font-semibold block">Crowd Index</span>
-                    <span className="text-[24px] font-bold text-text-primary">{selectedZone.population_pressure} <span className="text-sm font-normal text-text-muted">/ 100</span></span>
+                    <span className="text-[22px] font-bold text-text-primary">{selectedZone.population_pressure} <span className="text-xs font-normal text-text-muted">/ 100</span></span>
                   </div>
                   <StatusBadge status={selectedZone.status} />
                 </div>
 
-                <div className="space-y-2.5 text-[12px]">
+                <div className="space-y-2 text-[12px]">
                   <div className="flex justify-between py-1 border-b border-border/50">
                     <span className="text-text-secondary">Current Population:</span>
                     <span className="font-semibold text-text-primary">{selectedZone.current_people?.toLocaleString()} people</span>
@@ -134,7 +163,7 @@ export default function LiveCity() {
                     <span className="font-semibold text-low">-{selectedZone.departure_rate?.toLocaleString()} / hr</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/50">
-                    <span className="text-text-secondary">Transport Capacity:</span>
+                    <span className="text-text-secondary">Transit Capacity:</span>
                     <span className="font-semibold text-text-primary">{selectedZone.transport_capacity?.toLocaleString()} pass/hr</span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-border/50">
@@ -148,7 +177,7 @@ export default function LiveCity() {
                 </div>
 
                 <div className="bg-surface-muted/40 p-3 rounded-card-sm border border-border/60">
-                  <div className="flex items-center gap-2 mb-1.5">
+                  <div className="flex items-center gap-1.5 mb-1">
                     <Activity className="w-3.5 h-3.5 text-terracotta" />
                     <span className="text-[11px] font-semibold text-text-primary">Operational Status</span>
                   </div>
@@ -164,14 +193,14 @@ export default function LiveCity() {
             </Panel>
           ) : (
             <Card className="flex-1 flex items-center justify-center p-6 text-center text-text-muted">
-              Select a zone from the grid to inspect real-time metrics
+              Select a zone from the grid or map to inspect real-time metrics
             </Card>
           )}
         </div>
       </div>
 
       <div className="text-center pb-2">
-        <p className="text-[10px] text-text-muted tracking-wide">Prototype data · Simulated + calibrated to real geography</p>
+        <p className="text-[10.5px] text-text-muted tracking-wide">Prototype data · Simulated + calibrated to real geography</p>
       </div>
     </div>
   )

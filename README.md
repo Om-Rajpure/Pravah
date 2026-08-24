@@ -123,12 +123,14 @@ python app.py
 ```bash
 cd frontend
 
-# Install dependencies
-npm install
+# Install dependencies (on Windows PowerShell use npm.cmd or enable script execution)
+npm.cmd install
 
 # Start Vite development server
-npm run dev
+npm.cmd run dev
 ```
+
+> **Windows PowerShell Note**: If PowerShell reports `running scripts is disabled on this system`, run `npm.cmd run dev` or run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in your PowerShell window.
 
 Open your browser at `http://localhost:5173`.
 

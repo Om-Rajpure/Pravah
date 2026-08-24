@@ -11,9 +11,9 @@ class Config:
     # Central deterministic seed for synthetic city model
     DEMO_SEED = 20260908
     
-    # Database storage path (DuckDB)
+    # Database storage path (DuckDB: defaults to ':memory:' for zero-lock concurrency, or file path)
     DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-    DB_PATH = os.environ.get('PRAVAAH_DB_PATH', os.path.join(DATA_DIR, 'pravaah.duckdb'))
+    DB_PATH = os.environ.get('PRAVAAH_DB_PATH', ':memory:')
     
     # Event metadata
     EVENT_INFO = {

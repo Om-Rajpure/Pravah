@@ -3,22 +3,36 @@ PRAVAAH DuckDB Storage Layer & Database Manager
 """
 
 import os
+import logging
 import duckdb
 from config import Config
 from data.schema import SCHEMA_STATEMENTS
 from data.seed import generate_seed_data
 
+logger = logging.getLogger(__name__)
+
 _db_connection = None
 
 def get_db():
     """
-    Returns a connection to the DuckDB database.
+    Returns a singleton connection to the DuckDB database.
+    Handles file locking gracefully by falling back to in-memory mode if needed.
     """
     global _db_connection
     if _db_connection is None:
-        os.makedirs(os.path.dirname(Config.DB_PATH), exist_ok=True)
-        # duckdb allows connecting to the file
-        _db_connection = duckdb.connect(Config.DB_PATH)
+        db_path = Config.DB_PATH
+        if db_path and db_path != ':memory:':
+            try:
+                os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+                _db_connection = duckdb.connect(db_path)
+                logger.info(f"Connected to DuckDB file at: {db_path}")
+            except Exception as e:
+                logger.warning(f"Could not acquire lock on '{db_path}' ({e}). Falling back to in-memory DuckDB.")
+                _db_connection = duckdb.connect(':memory:')
+        else:
+            _db_connection = duckdb.connect(':memory:')
+            logger.info("Initialized high-performance in-memory DuckDB store.")
+            
     return _db_connection
 
 def init_db(force_reseed=False):
