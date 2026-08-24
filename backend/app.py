@@ -12,6 +12,7 @@ from routes.hotels import hotels_bp
 from routes.transport import transport_bp
 from routes.welfare import welfare_bp
 from routes.map import map_bp
+from routes.simulation import simulation_bp
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +46,7 @@ def create_app():
     app.register_blueprint(transport_bp)
     app.register_blueprint(welfare_bp)
     app.register_blueprint(map_bp)
+    app.register_blueprint(simulation_bp)
     
     return app
 

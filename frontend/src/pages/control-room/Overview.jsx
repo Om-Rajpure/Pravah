@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card } from '../../components/ui/Card'
 import { KPICard } from '../../components/ui/KPICard'
 import { Panel } from '../../components/ui/Panel'
@@ -7,25 +7,40 @@ import { RecommendationCard } from '../../components/ui/RecommendationCard'
 import { LoadingState } from '../../components/shared/LoadingState'
 import { ErrorState } from '../../components/shared/ErrorState'
 import { MumbaiMap } from '../../components/map/MumbaiMap'
+import { SimulationBar } from '../../components/simulation/SimulationBar'
 import { getOverview, getMapState } from '../../lib/api'
+import { 
+  getSimulationState, 
+  getSimulationTime, 
+  stepSimulation, 
+  startSimulation, 
+  pauseSimulation, 
+  resetSimulation 
+} from '../../services/simulationService'
 
 export default function Overview() {
   const [data, setData] = useState(null)
   const [mapData, setMapData] = useState(null)
+  const [simState, setSimState] = useState(null)
+  const [simStatus, setSimStatus] = useState('PAUSED')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [simulationActive, setSimulationActive] = useState(false)
+  const [simLoading, setSimLoading] = useState(false)
+  const timerRef = useRef(null)
 
   const fetchData = async () => {
     try {
       setLoading(true)
       setError(null)
-      const [overview, mapState] = await Promise.all([
+      const [overview, mapState, simulation] = await Promise.all([
         getOverview(),
-        getMapState()
+        getMapState(),
+        getSimulationState()
       ])
       setData(overview)
       setMapData(mapState)
+      setSimState(simulation)
+      setSimStatus(simulation?.status || 'PAUSED')
     } catch (err) {
       console.error('Failed to fetch overview dashboard data:', err)
       setError('Failed to load dashboard telemetry')
@@ -38,14 +53,87 @@ export default function Overview() {
     fetchData()
   }, [])
 
+  // Auto-step timer when simulation is running
+  useEffect(() => {
+    if (simStatus === 'RUNNING') {
+      timerRef.current = setInterval(async () => {
+        try {
+          const updatedState = await stepSimulation()
+          setSimState(updatedState)
+        } catch (err) {
+          console.warn('Auto simulation step failed:', err)
+        }
+      }, 3000)
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [simStatus])
+
+  const handlePlay = async () => {
+    setSimLoading(true)
+    try {
+      await startSimulation()
+      setSimStatus('RUNNING')
+    } catch (err) {
+      console.error('Failed to start simulation:', err)
+    } finally {
+      setSimLoading(false)
+    }
+  }
+
+  const handlePause = async () => {
+    setSimLoading(true)
+    try {
+      await pauseSimulation()
+      setSimStatus('PAUSED')
+    } catch (err) {
+      console.error('Failed to pause simulation:', err)
+    } finally {
+      setSimLoading(false)
+    }
+  }
+
+  const handleStep = async () => {
+    setSimLoading(true)
+    try {
+      const updated = await stepSimulation()
+      setSimState(updated)
+    } catch (err) {
+      console.error('Failed to advance simulation step:', err)
+    } finally {
+      setSimLoading(false)
+    }
+  }
+
+  const handleReset = async () => {
+    setSimLoading(true)
+    try {
+      const res = await resetSimulation()
+      setSimState(res.state)
+      setSimStatus('PAUSED')
+    } catch (err) {
+      console.error('Failed to reset simulation:', err)
+    } finally {
+      setSimLoading(false)
+    }
+  }
+
   const handleSimulateAction = (actionDetails) => {
-    setSimulationActive(true)
     alert(`Simulating intervention for: ${actionDetails?.name || 'Selected Corridor'}\n\nExpected Result: Dispersing 18% flow toward Thane/Vashi buffers.\nPressure reduces to 76% in ~45 minutes.`)
   }
 
   if (loading) return <LoadingState message="Loading city operations overview..." />
   if (error) return <ErrorState title="Dashboard unavailable" message={error} onRetry={fetchData} />
   if (!data) return null
+
+  // Calculate dynamic values from simulation state if available
+  const simTime = simState?.simulation_time || '18:00'
+  const activeVisitors = simState?.active_visitors || 12800
 
   const kpis = [
     { 
@@ -55,10 +143,10 @@ export default function Overview() {
       status: data.city_pressure >= 85 ? 'CRITICAL' : data.city_pressure >= 70 ? 'HIGH' : data.city_pressure >= 50 ? 'MODERATE' : 'LOW' 
     },
     { 
-      title: 'Predicted Peak', 
-      value: `${data.predicted_peak} / 100`, 
-      subtitle: 'expected in ~3 hours', 
-      status: data.predicted_peak >= 85 ? 'CRITICAL' : 'HIGH' 
+      title: 'Simulation Time', 
+      value: simTime, 
+      subtitle: 'Ganesh Chaturthi Day 9',
+      status: 'MODERATE'
     },
     { 
       title: 'Hotels Available', 
@@ -79,6 +167,18 @@ export default function Overview() {
 
   return (
     <div className="space-y-4 sm:space-y-5 max-w-[1600px] mx-auto">
+      {/* Simulation Clock & Lifecycle Bar */}
+      <SimulationBar
+        simTime={simTime}
+        status={simStatus}
+        activeVisitors={activeVisitors}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onStep={handleStep}
+        onReset={handleReset}
+        loading={simLoading}
+      />
+
       {/* KPI Cards Row: Horizontal scroll on mobile, 5-col grid on desktop */}
       <div className="flex sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 overflow-x-auto no-scrollbar pb-1 -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
         {kpis.map((kpi, idx) => (
@@ -124,7 +224,7 @@ export default function Overview() {
       {/* Data Source Label */}
       <div className="text-center pt-2 pb-1">
         <p className="text-[10.5px] text-text-muted tracking-wide">
-          Prototype data · Simulated + calibrated to real geography
+          Prototype data · Deterministic crowd simulator calibrated to real Mumbai geography
         </p>
       </div>
     </div>

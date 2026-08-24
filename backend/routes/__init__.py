@@ -5,6 +5,7 @@ from routes.hotels import hotels_bp
 from routes.transport import transport_bp
 from routes.welfare import welfare_bp
 from routes.map import map_bp
+from routes.simulation import simulation_bp
 
 __all__ = [
     'health_bp',
@@ -13,5 +14,6 @@ __all__ = [
     'hotels_bp',
     'transport_bp',
     'welfare_bp',
-    'map_bp'
+    'map_bp',
+    'simulation_bp'
 ]

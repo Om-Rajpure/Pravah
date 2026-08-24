@@ -2,7 +2,7 @@ import os
 
 class Config:
     SERVICE_NAME = 'pravaah'
-    VERSION = '0.2.0'
+    VERSION = '0.3.0'
     DEBUG = os.environ.get('FLASK_DEBUG', 'true').lower() == 'true'
     HOST = os.environ.get('FLASK_HOST', '0.0.0.0')
     PORT = int(os.environ.get('FLASK_PORT', 5000))
@@ -22,4 +22,41 @@ class Config:
         'period': 'Evening',
         'time': '18:00',
         'city': 'Mumbai'
+    }
+
+    # Phase 5 Crowd Simulation Engine Configuration
+    SIMULATION_START_TIME = "18:00"
+    SIMULATION_START_HOUR = 18
+    SIMULATION_START_MINUTE = 0
+    SIMULATION_STEP_MINUTES = 5
+    DEFAULT_VISITOR_COUNT = 10000
+
+    # Behavioral Group Probabilities
+    BEHAVIOR_DISTRIBUTION = {
+        'LOCAL': 0.40,
+        'OUTSTATION': 0.20,
+        'FAMILY': 0.18,
+        'YOUNG': 0.12,
+        'LOW_BUDGET': 0.05,
+        'HIGH_BUDGET': 0.05
+    }
+
+    # Origin Zone Weights
+    ORIGIN_WEIGHTS = {
+        'andheri': 0.18,
+        'dadar': 0.16,
+        'south-mumbai': 0.14,
+        'thane': 0.15,
+        'vashi': 0.12,
+        'navi-mumbai': 0.10,
+        'byculla': 0.08,
+        'parel': 0.07
+    }
+
+    # Event Destination Choices & Attractiveness Weights
+    DESTINATION_WEIGHTS = {
+        'loc-lalbaugcha-raja': 0.50, # Major epicenter
+        'loc-ganesh-galli': 0.22,
+        'loc-khetwadi-12': 0.15,
+        'loc-girgaon-chowpatty': 0.13
     }
