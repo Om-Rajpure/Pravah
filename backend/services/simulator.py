@@ -28,39 +28,21 @@ DESTINATION_ZONE_MAP = {
     'loc-girgaon-chowpatty': 'girgaon'
 }
 
-# Simplified geographic transit graph for Phase 5 (to be enhanced in Phase 6 Network Model)
-CORRIDOR_ROUTES = {
-    ('thane', 'lalbaug'): ['thane', 'dadar', 'parel', 'curry-road', 'lalbaug'],
-    ('andheri', 'lalbaug'): ['andheri', 'dadar', 'parel', 'lalbaug'],
-    ('vashi', 'lalbaug'): ['vashi', 'south-mumbai', 'byculla', 'curry-road', 'lalbaug'],
-    ('navi-mumbai', 'lalbaug'): ['navi-mumbai', 'vashi', 'south-mumbai', 'byculla', 'lalbaug'],
-    ('south-mumbai', 'lalbaug'): ['south-mumbai', 'girgaon', 'byculla', 'lalbaug'],
-    ('dadar', 'lalbaug'): ['dadar', 'parel', 'curry-road', 'lalbaug'],
-    ('byculla', 'lalbaug'): ['byculla', 'lalbaug'],
-    ('parel', 'lalbaug'): ['parel', 'curry-road', 'lalbaug'],
-    ('curry-road', 'lalbaug'): ['curry-road', 'lalbaug'],
-    
-    # Girgaon routes
-    ('thane', 'girgaon'): ['thane', 'dadar', 'byculla', 'girgaon'],
-    ('andheri', 'girgaon'): ['andheri', 'dadar', 'south-mumbai', 'girgaon'],
-    ('vashi', 'girgaon'): ['vashi', 'south-mumbai', 'girgaon'],
-    ('navi-mumbai', 'girgaon'): ['navi-mumbai', 'vashi', 'south-mumbai', 'girgaon'],
-    ('south-mumbai', 'girgaon'): ['south-mumbai', 'girgaon'],
-    ('dadar', 'girgaon'): ['dadar', 'byculla', 'girgaon'],
-    ('byculla', 'girgaon'): ['byculla', 'girgaon'],
-    ('lalbaug', 'girgaon'): ['lalbaug', 'curry-road', 'byculla', 'girgaon']
-}
-
 def get_route(source_zone: str, destination_zone: str) -> List[str]:
     """
-    Returns a connected list of zones for travel.
+    Returns a connected list of zones for travel using the Network graph service.
+    Falls back gracefully if disconnected.
     """
     if source_zone == destination_zone:
         return [source_zone]
-    key = (source_zone, destination_zone)
-    if key in CORRIDOR_ROUTES:
-        return list(CORRIDOR_ROUTES[key])
-    # Default direct path if unlisted
+    try:
+        from services.network_service import get_network
+        res = get_network().get_route(source_zone, destination_zone)
+        if res.status == "AVAILABLE" and res.path_zones:
+            return res.path_zones
+    except Exception as e:
+        logger.warn(f"Network route lookup fallback: {e}")
+        
     return [source_zone, 'dadar', 'parel', destination_zone]
 
 

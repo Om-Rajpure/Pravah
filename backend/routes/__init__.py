@@ -6,6 +6,8 @@ from routes.transport import transport_bp
 from routes.welfare import welfare_bp
 from routes.map import map_bp
 from routes.simulation import simulation_bp
+from routes.network import network_bp
+from routes.predictions import predictions_bp
 
 __all__ = [
     'health_bp',
@@ -15,5 +17,7 @@ __all__ = [
     'transport_bp',
     'welfare_bp',
     'map_bp',
-    'simulation_bp'
+    'simulation_bp',
+    'network_bp',
+    'predictions_bp'
 ]

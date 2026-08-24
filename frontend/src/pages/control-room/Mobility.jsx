@@ -5,6 +5,7 @@ import { Panel } from '../../components/ui/Panel'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { LoadingState } from '../../components/shared/LoadingState'
 import { ErrorState } from '../../components/shared/ErrorState'
+import { NetworkDemoPanel } from '../../components/network/NetworkDemoPanel'
 import { getTransport } from '../../lib/api'
 
 export default function Mobility() {
@@ -64,6 +65,9 @@ export default function Mobility() {
           <span className="text-[11px] text-critical font-medium block mt-0.5">≥85% design capacity</span>
         </div>
       </div>
+
+      {/* Interactive Network Connectivity & Disruption Simulation */}
+      <NetworkDemoPanel />
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Railway Nodes Table */}
