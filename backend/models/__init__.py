@@ -15,6 +15,11 @@ from models.action import (
     ActionSimulationResult,
     ImpactComparison
 )
+from models.scenario import (
+    ScenarioDefinition,
+    ScenarioCascadeStage,
+    ScenarioResult
+)
 
 __all__ = [
     'SyntheticVisitor',
@@ -27,5 +32,8 @@ __all__ = [
     'RouteResult',
     'InterventionAction',
     'ActionSimulationResult',
-    'ImpactComparison'
+    'ImpactComparison',
+    'ScenarioDefinition',
+    'ScenarioCascadeStage',
+    'ScenarioResult'
 ]

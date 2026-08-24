@@ -16,6 +16,7 @@ from routes.simulation import simulation_bp
 from routes.network import network_bp
 from routes.predictions import predictions_bp
 from routes.actions import actions_bp
+from routes.scenarios import scenarios_bp
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,6 +54,7 @@ def create_app():
     app.register_blueprint(network_bp)
     app.register_blueprint(predictions_bp)
     app.register_blueprint(actions_bp)
+    app.register_blueprint(scenarios_bp)
     
     return app
 

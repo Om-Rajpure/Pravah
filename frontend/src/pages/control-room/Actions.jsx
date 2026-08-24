@@ -1,22 +1,34 @@
 import React, { useState, useEffect } from 'react'
 import { Sparkles, Layers, CheckCircle2, TrendingDown, ArrowRight, ShieldCheck } from 'lucide-react'
 import { ActionRecommendationCard } from '../../components/actions/ActionRecommendationCard'
+import { ScenarioSelector } from '../../components/scenarios/ScenarioSelector'
+import { ScenarioScorecard } from '../../components/scenarios/ScenarioScorecard'
+import { ScenarioCascadePanel } from '../../components/scenarios/ScenarioCascadePanel'
 import { Panel } from '../../components/ui/Panel'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { LoadingState } from '../../components/shared/LoadingState'
 import { getActionRecommendations } from '../../services/actionService'
+import { getScenarios, simulateScenario, resetScenario } from '../../services/scenarioService'
 
 export default function Actions() {
   const [data, setData] = useState(null)
+  const [scenarios, setScenarios] = useState([])
+  const [selectedScenarioId, setSelectedScenarioId] = useState('central-line-disruption')
+  const [scenarioSimResult, setScenarioSimResult] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [simLoading, setSimLoading] = useState(false)
 
   const fetchData = async () => {
     try {
       setLoading(true)
-      const res = await getActionRecommendations()
-      setData(res)
+      const [recRes, scenRes] = await Promise.all([
+        getActionRecommendations(),
+        getScenarios()
+      ])
+      setData(recRes)
+      setScenarios(scenRes)
     } catch (err) {
-      console.error('Failed to load actions:', err)
+      console.error('Failed to load actions & scenarios:', err)
     } finally {
       setLoading(false)
     }
@@ -26,6 +38,31 @@ export default function Actions() {
     fetchData()
   }, [])
 
+  const handleSimulateScenario = async () => {
+    try {
+      setSimLoading(true)
+      const res = await simulateScenario(selectedScenarioId)
+      setScenarioSimResult(res)
+    } catch (err) {
+      console.error('Scenario simulation failed:', err)
+    } finally {
+      setSimLoading(false)
+    }
+  }
+
+  const handleResetScenario = async () => {
+    try {
+      setSimLoading(true)
+      await resetScenario()
+      setScenarioSimResult(null)
+      await fetchData()
+    } catch (err) {
+      console.error('Scenario reset failed:', err)
+    } finally {
+      setSimLoading(false)
+    }
+  }
+
   if (loading) return <LoadingState message="Evaluating counterfactual intervention candidates..." />
 
   const rec = data?.recommended_action
@@ -34,6 +71,29 @@ export default function Actions() {
 
   return (
     <div className="space-y-4 sm:space-y-5 max-w-[1600px] mx-auto">
+      {/* What-If Scenario Injector Bar */}
+      <ScenarioSelector
+        scenarios={scenarios}
+        selectedScenarioId={selectedScenarioId}
+        onSelectScenario={(id) => setSelectedScenarioId(id)}
+        onSimulate={handleSimulateScenario}
+        onReset={handleResetScenario}
+        loading={simLoading}
+        isDisrupted={Boolean(scenarioSimResult)}
+      />
+
+      {/* When a Scenario is Simulated: Render 3-Way Scorecard & Cause-and-Effect Cascade */}
+      {scenarioSimResult && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
+          <div className="lg:col-span-7">
+            <ScenarioScorecard simulationResult={scenarioSimResult} />
+          </div>
+          <div className="lg:col-span-5 flex flex-col">
+            <ScenarioCascadePanel cascade={scenarioSimResult.cascade} />
+          </div>
+        </div>
+      )}
+
       {/* Top Intervention Summary KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="bg-surface border border-border rounded-card p-3.5 sm:p-4 shadow-subtle">
