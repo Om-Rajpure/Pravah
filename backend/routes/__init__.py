@@ -8,6 +8,7 @@ from routes.map import map_bp
 from routes.simulation import simulation_bp
 from routes.network import network_bp
 from routes.predictions import predictions_bp
+from routes.actions import actions_bp
 
 __all__ = [
     'health_bp',
@@ -19,5 +20,6 @@ __all__ = [
     'map_bp',
     'simulation_bp',
     'network_bp',
-    'predictions_bp'
+    'predictions_bp',
+    'actions_bp'
 ]

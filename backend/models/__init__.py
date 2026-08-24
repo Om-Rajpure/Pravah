@@ -10,6 +10,11 @@ from models.network import (
     NetworkEdge,
     RouteResult
 )
+from models.action import (
+    InterventionAction,
+    ActionSimulationResult,
+    ImpactComparison
+)
 
 __all__ = [
     'SyntheticVisitor',
@@ -19,5 +24,8 @@ __all__ = [
     'DestinationSimState',
     'NetworkNode',
     'NetworkEdge',
-    'RouteResult'
+    'RouteResult',
+    'InterventionAction',
+    'ActionSimulationResult',
+    'ImpactComparison'
 ]
