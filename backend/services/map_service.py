@@ -1,128 +1,65 @@
 """
 PRAVAAH Map Service
-Provides unified geographic state and authentic GeoJSON FeatureCollections
+Provides unified geographic state, live simulation telemetry, multi-horizon predictions,
+dynamic network topology, disruption scenarios, and counterfactual intervention layers
 for MapLibre GL JS visualization.
 """
 
+import logging
+from typing import Dict, Any, List
 from data.db import query_all
+from services.network_service import get_network
+from services.prediction_service import get_predictor
+from services.scenario_service import get_scenario_engine
+from services.intervention_service import get_intervention_engine
 
-# Pre-defined authentic convex polygon boundaries for Mumbai operational zones [lng, lat]
+logger = logging.getLogger('pravaah.map')
+
+# Authentic polygon boundaries for Mumbai operational zones [lng, lat]
 ZONE_BOUNDARIES = {
     "south-mumbai": [
-        [72.8200, 18.9150],
-        [72.8420, 18.9150],
-        [72.8460, 18.9480],
-        [72.8330, 18.9520],
-        [72.8200, 18.9320],
-        [72.8200, 18.9150]
+        [72.8200, 18.9150], [72.8420, 18.9150], [72.8460, 18.9480],
+        [72.8330, 18.9520], [72.8200, 18.9320], [72.8200, 18.9150]
     ],
     "girgaon": [
-        [72.8060, 18.9460],
-        [72.8240, 18.9480],
-        [72.8250, 18.9660],
-        [72.8090, 18.9660],
-        [72.8060, 18.9460]
+        [72.8060, 18.9460], [72.8240, 18.9480], [72.8250, 18.9660],
+        [72.8090, 18.9660], [72.8060, 18.9460]
     ],
     "byculla": [
-        [72.8220, 18.9660],
-        [72.8420, 18.9660],
-        [72.8410, 18.9840],
-        [72.8220, 18.9840],
-        [72.8220, 18.9660]
+        [72.8220, 18.9660], [72.8420, 18.9660], [72.8410, 18.9840],
+        [72.8220, 18.9840], [72.8220, 18.9660]
     ],
     "curry-road": [
-        [72.8240, 18.9860],
-        [72.8390, 18.9860],
-        [72.8390, 19.0020],
-        [72.8240, 19.0020],
-        [72.8240, 18.9860]
+        [72.8240, 18.9860], [72.8390, 18.9860], [72.8390, 19.0020],
+        [72.8240, 19.0020], [72.8240, 18.9860]
     ],
     "lalbaug": [
-        [72.8310, 18.9830],
-        [72.8460, 18.9830],
-        [72.8460, 18.9990],
-        [72.8310, 18.9990],
-        [72.8310, 18.9830]
+        [72.8310, 18.9830], [72.8460, 18.9830], [72.8460, 18.9990],
+        [72.8310, 18.9990], [72.8310, 18.9830]
     ],
     "parel": [
-        [72.8340, 18.9940],
-        [72.8520, 18.9940],
-        [72.8520, 19.0120],
-        [72.8340, 19.0120],
-        [72.8340, 18.9940]
+        [72.8340, 18.9940], [72.8520, 18.9940], [72.8520, 19.0120],
+        [72.8340, 19.0120], [72.8340, 18.9940]
     ],
     "dadar": [
-        [72.8330, 19.0100],
-        [72.8580, 19.0100],
-        [72.8580, 19.0340],
-        [72.8330, 19.0340],
-        [72.8330, 19.0100]
+        [72.8330, 19.0100], [72.8580, 19.0100], [72.8580, 19.0340],
+        [72.8330, 19.0340], [72.8330, 19.0100]
     ],
     "andheri": [
-        [72.8280, 19.1020],
-        [72.8650, 19.1020],
-        [72.8650, 19.1350],
-        [72.8280, 19.1350],
-        [72.8280, 19.1020]
+        [72.8280, 19.1020], [72.8650, 19.1020], [72.8650, 19.1350],
+        [72.8280, 19.1350], [72.8280, 19.1020]
     ],
     "thane": [
-        [72.9520, 19.1920],
-        [72.9980, 19.1920],
-        [72.9980, 19.2380],
-        [72.9520, 19.2380],
-        [72.9520, 19.1920]
+        [72.9520, 19.1920], [72.9980, 19.1920], [72.9980, 19.2380],
+        [72.9520, 19.2380], [72.9520, 19.1920]
     ],
     "vashi": [
-        [72.9780, 19.0580],
-        [73.0180, 19.0580],
-        [73.0180, 19.0960],
-        [72.9780, 19.0960],
-        [72.9780, 19.0580]
+        [72.9780, 19.0580], [73.0180, 19.0580], [73.0180, 19.0960],
+        [72.9780, 19.0960], [72.9780, 19.0580]
     ],
     "navi-mumbai": [
-        [73.0080, 19.0120],
-        [73.0580, 19.0120],
-        [73.0580, 19.0550],
-        [73.0080, 19.0550],
-        [73.0080, 19.0120]
-    ]
-}
-
-# Arterial road line coordinates [lng, lat]
-ROAD_COORDINATES = {
-    "road-dr-ba-road": [
-        [72.8378, 18.9912],
-        [72.8420, 18.9980],
-        [72.8478, 19.0178]
-    ],
-    "road-sane-guruji": [
-        [72.8329, 18.9944],
-        [72.8322, 18.9880]
-    ],
-    "road-eastern-freeway": [
-        [72.8420, 18.9350],
-        [72.8550, 18.9750],
-        [72.8680, 19.0150],
-        [72.8850, 19.0450],
-        [72.9780, 19.0750]
-    ],
-    "road-tilak-bridge": [
-        [72.8420, 19.0180],
-        [72.8520, 19.0180]
-    ],
-    "road-lalbaug-flyover": [
-        [72.8320, 18.9750],
-        [72.8378, 18.9912],
-        [72.8415, 18.9982]
-    ],
-    "road-nm-joshi": [
-        [72.8290, 18.9950],
-        [72.8325, 18.9940]
-    ],
-    "road-marine-drive": [
-        [72.8230, 18.9250],
-        [72.8210, 18.9400],
-        [72.8130, 18.9545]
+        [73.0080, 19.0120], [73.0580, 19.0120], [73.0580, 19.0550],
+        [73.0080, 19.0550], [73.0080, 19.0120]
     ]
 }
 
@@ -131,7 +68,7 @@ RAILWAY_LINES = [
     {
         "id": "line-central",
         "name": "Central Railway Mainline",
-        "color": "#536873",
+        "color": "#2468B8",
         "coordinates": [
             [72.8354, 18.9400], # CSMT
             [72.8320, 18.9750], # Byculla
@@ -145,7 +82,7 @@ RAILWAY_LINES = [
     {
         "id": "line-western",
         "name": "Western Railway Corridor",
-        "color": "#536873",
+        "color": "#2D9C8F",
         "coordinates": [
             [72.8260, 18.9320], # Churchgate
             [72.8290, 18.9950], # Lower Parel
@@ -156,7 +93,7 @@ RAILWAY_LINES = [
     {
         "id": "line-harbour",
         "name": "Harbour Line Transit",
-        "color": "#536873",
+        "color": "#4D5963",
         "coordinates": [
             [72.8354, 18.9400], # CSMT
             [72.9986, 19.0771], # Vashi
@@ -165,12 +102,34 @@ RAILWAY_LINES = [
     }
 ]
 
-def get_unified_map_state():
+def get_unified_map_state() -> Dict[str, Any]:
     """
-    Returns complete multi-layer map state and GeoJSON FeatureCollections for PRAVAAH.
+    Builds the unified live intelligence map state combining simulation telemetry,
+    multi-horizon predictions, NetworkX graph edges, active scenario disruptions,
+    and counterfactual intervention impacts.
     """
-    # 1. Fetch Zones with crowd state
-    zones = query_all("""
+    # 1. Fetch live predictions across all zones
+    predictor = get_predictor()
+    preds_data = predictor.predict_all_zones()
+    zone_preds_map = {z['zone_id']: z for z in preds_data.get('zones', [])}
+
+    # 2. Fetch live network state & GeoJSON
+    network = get_network()
+    network_geojson = network.get_network_geojson()
+
+    # 3. Fetch active scenario state
+    scenario_engine = get_scenario_engine()
+    scenario_state = scenario_engine.get_current_scenario()
+    active_scenario_id = scenario_state.get('active_scenario_id')
+
+    # 4. Fetch intervention recommendations & counterfactual simulation
+    intervention_engine = get_intervention_engine()
+    recs_data = intervention_engine.get_recommendations()
+    rec_action = recs_data.get('recommended_action', {})
+    impact_data = recs_data.get('impact', {})
+
+    # 5. Fetch Zones from DB
+    raw_zones = query_all("""
         SELECT 
             z.id, 
             z.name, 
@@ -186,63 +145,87 @@ def get_unified_map_state():
         FROM zones z
         LEFT JOIN crowd_state cs ON z.id = cs.zone_id
     """)
-    
+
     zone_features = []
-    for z in zones:
-        p = z["population_pressure"]
-        if p >= 85:
-            z["pressure_level"] = "CRITICAL"
-            z["fill_color"] = "#A94338"
-            z["border_color"] = "#7A3029"
-        elif p >= 70:
-            z["pressure_level"] = "HIGH"
-            z["fill_color"] = "#B85C3E"
-            z["border_color"] = "#91452F"
-        elif p >= 50:
-            z["pressure_level"] = "MODERATE"
-            z["fill_color"] = "#B8893D"
-            z["border_color"] = "#8C6324"
-        else:
-            z["pressure_level"] = "LOW"
-            z["fill_color"] = "#52755F"
-            z["border_color"] = "#3A5544"
-            
-        coords = ZONE_BOUNDARIES.get(z["id"], [
+    zone_list = []
+
+    for z in raw_zones:
+        zid = z["id"]
+        # Use live prediction pressure if available, else DB pressure
+        pred_entry = zone_preds_map.get(zid, {})
+        current_p = round(pred_entry.get('current_pressure', z["population_pressure"]))
+        
+        # Forecast horizons
+        horizons = pred_entry.get('predictions', [])
+        p_30m  = round(horizons[0].get('predicted_pressure', current_p)) if len(horizons) > 0 else current_p
+        p_60m  = round(horizons[1].get('predicted_pressure', current_p)) if len(horizons) > 1 else current_p
+        p_120m = round(horizons[2].get('predicted_pressure', current_p)) if len(horizons) > 2 else current_p
+        p_180m = round(horizons[3].get('predicted_pressure', current_p)) if len(horizons) > 3 else current_p
+
+        # Trend calculation
+        trend = 'STABLE'
+        if p_60m > current_p + 3:
+            trend = 'RISING'
+        elif p_60m < current_p - 3:
+            trend = 'EASING'
+
+        # Colors based on current pressure
+        fill_color, border_color, level = _get_pressure_visuals(current_p)
+
+        # Counterfactual simulation after-pressure
+        after_p = current_p
+        if zid == 'curry-road':
+            after_p = impact_data.get('target_pressure_after', max(0, current_p - 18))
+        elif zid == 'thane':
+            after_p = impact_data.get('destination_pressure_after', current_p + 8)
+
+        coords = ZONE_BOUNDARIES.get(zid, [
             [z["lng"] - 0.008, z["lat"] - 0.008],
             [z["lng"] + 0.008, z["lat"] - 0.008],
             [z["lng"] + 0.008, z["lat"] + 0.008],
             [z["lng"] - 0.008, z["lat"] + 0.008],
             [z["lng"] - 0.008, z["lat"] - 0.008]
         ])
-        
+
+        zone_obj = {
+            "id": zid,
+            "name": z["name"],
+            "pressure": current_p,
+            "pressure_level": level,
+            "current_people": z.get("current_people", 0),
+            "arrival_rate": z.get("arrival_rate", 0),
+            "departure_rate": z.get("departure_rate", 0),
+            "forecast_30m": p_30m,
+            "forecast_60m": p_60m,
+            "forecast_120m": p_120m,
+            "forecast_180m": p_180m,
+            "forecast_delta": p_60m - current_p,
+            "counterfactual_after": after_p,
+            "counterfactual_delta": after_p - current_p,
+            "trend": trend,
+            "fill_color": fill_color,
+            "border_color": border_color,
+            "lat": z["lat"],
+            "lng": z["lng"]
+        }
+        zone_list.append(zone_obj)
+
         zone_features.append({
             "type": "Feature",
-            "id": z["id"],
+            "id": zid,
             "geometry": {
                 "type": "Polygon",
                 "coordinates": [coords]
             },
-            "properties": {
-                "id": z["id"],
-                "name": z["name"],
-                "pressure": z["population_pressure"],
-                "pressure_level": z["pressure_level"],
-                "current_people": z.get("current_people", 0),
-                "arrival_rate": z.get("arrival_rate", 0),
-                "departure_rate": z.get("departure_rate", 0),
-                "fill_color": z["fill_color"],
-                "border_color": z["border_color"],
-                "lat": z["lat"],
-                "lng": z["lng"]
-            }
+            "properties": zone_obj
         })
-        
+
     zones_geojson = {
         "type": "FeatureCollection",
         "features": zone_features
     }
 
-    # 2. Fetch Stations
+    # 6. Fetch Stations
     stations = query_all("""
         SELECT 
             id, 
@@ -255,23 +238,23 @@ def get_unified_map_state():
             lng
         FROM stations
     """)
-    
+
     station_features = []
     for s in stations:
         pct = s["load_percentage"]
         if pct >= 85:
             s["status"] = "CRITICAL"
-            s["color"] = "#A94338"
+            s["color"] = "#B03A2E"
         elif pct >= 70:
             s["status"] = "HIGH"
-            s["color"] = "#B85C3E"
+            s["color"] = "#E69A2E"
         elif pct >= 50:
             s["status"] = "MODERATE"
             s["color"] = "#B8893D"
         else:
             s["status"] = "LOW"
-            s["color"] = "#52755F"
-            
+            s["color"] = "#2D9C8F"
+
         station_features.append({
             "type": "Feature",
             "id": s["id"],
@@ -290,176 +273,48 @@ def get_unified_map_state():
                 "color": s["color"]
             }
         })
-        
+
     stations_geojson = {
         "type": "FeatureCollection",
         "features": station_features
     }
 
-    # 3. Fetch Hotels
-    hotels = query_all("""
-        SELECT 
-            h.id, 
-            h.zone_id, 
-            z.name as zone_name,
-            h.name, 
-            h.total_rooms, 
-            h.available_rooms, 
-            ROUND(((h.total_rooms - h.available_rooms) * 100.0) / h.total_rooms, 1) as occupancy_rate,
-            h.price, 
-            h.lat, 
-            h.lng
-        FROM hotels h
-        JOIN zones z ON h.zone_id = z.id
-    """)
-    
-    hotel_features = []
-    for h in hotels:
-        occ = h["occupancy_rate"]
-        color = "#A94338" if occ >= 85 else "#B85C3E" if occ >= 70 else "#B8893D" if occ >= 50 else "#52755F"
-        hotel_features.append({
-            "type": "Feature",
-            "id": h["id"],
-            "geometry": {
-                "type": "Point",
-                "coordinates": [h["lng"], h["lat"]]
-            },
-            "properties": {
-                "id": h["id"],
-                "name": h["name"],
-                "zone_id": h["zone_id"],
-                "zone_name": h["zone_name"],
-                "total_rooms": h["total_rooms"],
-                "available_rooms": h["available_rooms"],
-                "occupancy_rate": occ,
-                "price": h["price"],
-                "color": color
-            }
-        })
-        
-    hotels_geojson = {
+    # 7. Intervention Flow Geometry Line (Curry Road -> Dadar -> Thane Corridor)
+    intervention_flow_geojson = {
         "type": "FeatureCollection",
-        "features": hotel_features
+        "features": [
+            {
+                "type": "Feature",
+                "id": "flow-curry-road-thane",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [72.8336, 18.9942], # Curry Road
+                        [72.8398, 19.0022], # Parel
+                        [72.8478, 19.0178], # Dadar
+                        [72.9781, 19.2183]  # Thane
+                    ]
+                },
+                "properties": {
+                    "source": "curry-road",
+                    "source_name": "Curry Road",
+                    "destination": "thane",
+                    "destination_name": "Thane Suburban Hub",
+                    "dosage_pct": rec_action.get('dosage_pct', 18),
+                    "people_redirected": impact_data.get('affected_people', 2500),
+                    "reduction_pts": impact_data.get('pressure_reduction', 18),
+                    "color": "#E69A2E"
+                }
+            }
+        ]
     }
 
-    # 4. Fetch Roads
-    roads = query_all("""
-        SELECT 
-            id, 
-            source, 
-            target, 
-            capacity, 
-            travel_time, 
-            status, 
-            closure_start, 
-            closure_end
-        FROM roads
-    """)
-    
-    road_features = []
-    for r in roads:
-        coords = ROAD_COORDINATES.get(r["id"], [[72.83, 18.99], [72.84, 19.01]])
-        color = "#51423D" if r["status"] == "RESTRICTED" else "#A94338" if r["status"] == "CLOSED" else "#536873"
-        road_features.append({
-            "type": "Feature",
-            "id": r["id"],
-            "geometry": {
-                "type": "LineString",
-                "coordinates": coords
-            },
-            "properties": {
-                "id": r["id"],
-                "source": r["source"],
-                "target": r["target"],
-                "capacity": r["capacity"],
-                "travel_time": r["travel_time"],
-                "status": r["status"],
-                "closure_start": r["closure_start"],
-                "closure_end": r["closure_end"],
-                "color": color
-            }
-        })
-        
-    roads_geojson = {
-        "type": "FeatureCollection",
-        "features": road_features
-    }
-
-    # 5. Fetch Welfare Amenities
-    welfare = query_all("""
-        SELECT 
-            id, 
-            name, 
-            type, 
-            latitude, 
-            longitude, 
-            capacity, 
-            status
-        FROM welfare
-    """)
-    
-    welfare_features = []
-    for w in welfare:
-        welfare_features.append({
-            "type": "Feature",
-            "id": w["id"],
-            "geometry": {
-                "type": "Point",
-                "coordinates": [w["longitude"], w["latitude"]]
-            },
-            "properties": {
-                "id": w["id"],
-                "name": w["name"],
-                "type": w["type"],
-                "capacity": w["capacity"],
-                "status": w["status"]
-            }
-        })
-        
-    welfare_geojson = {
-        "type": "FeatureCollection",
-        "features": welfare_features
-    }
-
-    # 6. Fetch Key Locations
-    locations = query_all("""
-        SELECT 
-            id, 
-            name, 
-            type, 
-            latitude, 
-            longitude, 
-            zone_id, 
-            capacity
-        FROM locations
-    """)
-    
-    location_features = []
-    for loc in locations:
-        location_features.append({
-            "type": "Feature",
-            "id": loc["id"],
-            "geometry": {
-                "type": "Point",
-                "coordinates": [loc["longitude"], loc["latitude"]]
-            },
-            "properties": {
-                "id": loc["id"],
-                "name": loc["name"],
-                "type": loc["type"],
-                "zone_id": loc["zone_id"],
-                "capacity": loc["capacity"]
-            }
-        })
-        
-    locations_geojson = {
-        "type": "FeatureCollection",
-        "features": location_features
-    }
-
-    # 7. Railway Line features
+    # 8. Railway Lines GeoJSON
     rail_features = []
     for line in RAILWAY_LINES:
+        # Check if Central line is disrupted by active scenario
+        is_line_disrupted = (line["id"] == "line-central" and active_scenario_id == "central-line-disruption")
+        line_color = "#B03A2E" if is_line_disrupted else line["color"]
         rail_features.append({
             "type": "Feature",
             "id": line["id"],
@@ -470,31 +325,57 @@ def get_unified_map_state():
             "properties": {
                 "id": line["id"],
                 "name": line["name"],
-                "color": line["color"]
+                "color": line_color,
+                "status": "DISRUPTED" if is_line_disrupted else "OPERATIONAL"
             }
         })
-        
+
     transit_lines_geojson = {
         "type": "FeatureCollection",
         "features": rail_features
     }
 
     return {
-        "center": [72.8400, 18.9950], # [lng, lat] Lalbaug / Curry Road corridor
+        "center": [72.8400, 18.9950],
         "zoom": 11.8,
-        "zones": zones,
+        "zones": zone_list,
         "stations": stations,
-        "hotels": hotels,
-        "roads": roads,
-        "welfare": welfare,
-        "locations": locations,
+        "active_scenario": {
+            "id": active_scenario_id,
+            "name": scenario_state.get('scenario_name', 'None'),
+            "is_active": bool(active_scenario_id),
+            "affected_corridors": ["Central Railway Mainline (Curry Road – Parel)"] if active_scenario_id == "central-line-disruption" else []
+        },
+        "recommendation": {
+            "source": rec_action.get('source', 'curry-road'),
+            "source_name": rec_action.get('source_name', 'Curry Road'),
+            "destination": rec_action.get('destination', 'thane'),
+            "destination_name": rec_action.get('destination_name', 'Thane'),
+            "dosage_pct": rec_action.get('dosage_pct', 18),
+            "target_before": impact_data.get('target_pressure_before', 94),
+            "target_after": impact_data.get('target_pressure_after', 76),
+            "reduction": impact_data.get('pressure_reduction', 18),
+            "side_effect_increase": impact_data.get('side_effect_increase', 8),
+            "critical_before": impact_data.get('critical_zones_before', 3),
+            "critical_after": impact_data.get('critical_zones_after', 1)
+        },
         "geojson": {
             "zones": zones_geojson,
             "stations": stations_geojson,
-            "hotels": hotels_geojson,
-            "roads": roads_geojson,
-            "welfare": welfare_geojson,
-            "locations": locations_geojson,
-            "transit_lines": transit_lines_geojson
+            "network_graph": network_geojson,
+            "transit_lines": transit_lines_geojson,
+            "intervention_flow": intervention_flow_geojson
         }
     }
+
+
+def _get_pressure_visuals(pressure: float):
+    """Returns brand-aligned hex colors and level label for pressure score."""
+    if pressure >= 85:
+        return "#B03A2E", "#7A2017", "CRITICAL"
+    elif pressure >= 70:
+        return "#E69A2E", "#B87518", "HIGH"
+    elif pressure >= 50:
+        return "#B8893D", "#8A6424", "MODERATE"
+    else:
+        return "#2D9C8F", "#1D6E64", "LOW"
