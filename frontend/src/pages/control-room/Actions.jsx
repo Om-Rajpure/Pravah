@@ -4,6 +4,8 @@ import { ActionRecommendationCard } from '../../components/actions/ActionRecomme
 import { ScenarioSelector } from '../../components/scenarios/ScenarioSelector'
 import { ScenarioScorecard } from '../../components/scenarios/ScenarioScorecard'
 import { ScenarioCascadePanel } from '../../components/scenarios/ScenarioCascadePanel'
+import { GlassBoxPanel } from '../../components/explainability/GlassBoxPanel'
+import { DecisionAuditTimeline } from '../../components/explainability/DecisionAuditTimeline'
 import { Panel } from '../../components/ui/Panel'
 import { StatusBadge } from '../../components/ui/StatusBadge'
 import { LoadingState } from '../../components/shared/LoadingState'
@@ -165,6 +167,16 @@ export default function Actions() {
               </div>
             </div>
           </Panel>
+        </div>
+      </div>
+
+      {/* Glass Box Explainability & Decision Audit Timeline */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 pt-2">
+        <div className="lg:col-span-7">
+          <GlassBoxPanel actionId={rec?.id || 'act-redirect-curry-road-thane-18'} />
+        </div>
+        <div className="lg:col-span-5 flex flex-col">
+          <DecisionAuditTimeline />
         </div>
       </div>
 

@@ -20,6 +20,11 @@ from models.scenario import (
     ScenarioCascadeStage,
     ScenarioResult
 )
+from models.explainability import (
+    TraceStage,
+    DecisionExplanation,
+    AuditEvent
+)
 
 __all__ = [
     'SyntheticVisitor',
@@ -35,5 +40,8 @@ __all__ = [
     'ImpactComparison',
     'ScenarioDefinition',
     'ScenarioCascadeStage',
-    'ScenarioResult'
+    'ScenarioResult',
+    'TraceStage',
+    'DecisionExplanation',
+    'AuditEvent'
 ]
