@@ -1,11 +1,12 @@
 """
 PRAVAAH Visitor API Routes
-Phase 11 — Public-Safe Endpoints for Visitor-Facing Experience
+Phase 13 — Public-Safe Endpoints with Input Validation and Privacy Safeguards
 """
 
 from flask import Blueprint, jsonify, request
 from services.visitor_recommendation import get_visitor_engine
-from services.privacy_service import to_public_recommendation
+from utils.errors import make_error_response
+from utils.validators import validate_destination_id, validate_visitor_preference
 
 visitor_bp = Blueprint('visitor', __name__)
 
@@ -18,41 +19,47 @@ def get_destinations():
         dests = engine.get_all_destinations()
         return jsonify(dests)
     except Exception as e:
-        return jsonify({'error': 'Failed to load destinations', 'message': str(e)}), 500
+        return make_error_response("DESTINATIONS_LOAD_FAILED", "Failed to load destinations", 500)
 
 
 @visitor_bp.route('/api/visitor/destinations/<destination_id>', methods=['GET'])
 def get_destination_detail(destination_id):
     """Returns detailed public-safe destination profile with crowd forecast."""
     try:
+        is_valid, err = validate_destination_id(destination_id)
+        if not is_valid:
+            return make_error_response("INVALID_DESTINATION", err, 404)
+            
         engine = get_visitor_engine()
         detail = engine.get_destination_detail(destination_id)
         if not detail:
-            return jsonify({'error': f'Destination {destination_id} not found'}), 404
+            return make_error_response("DESTINATION_NOT_FOUND", f"Destination {destination_id} not found", 404)
         return jsonify(detail)
     except Exception as e:
-        return jsonify({'error': 'Failed to load destination', 'message': str(e)}), 500
+        return make_error_response("DESTINATION_FETCH_FAILED", str(e), 500)
 
 
 @visitor_bp.route('/api/visitor/recommendations', methods=['POST'])
 def get_visitor_recommendation():
     """
     Returns a visitor recommendation based on destination and preference.
-    Never exposes operator intervention dosages, individual visitor data, or model internals.
     Body: { "destination_id": "...", "preference": "LESS_CROWDED" }
     """
     try:
         body = request.get_json() or {}
         destination_id = body.get('destination_id', 'lalbaugcha-raja')
-        preference = body.get('preference', 'LESS_CROWDED')
-        if preference not in ('LESS_CROWDED', 'FASTEST', 'AVOID_DISRUPTION', 'LOWER_TRAVEL_TIME'):
-            preference = 'LESS_CROWDED'
+        is_valid, err = validate_destination_id(destination_id)
+        if not is_valid:
+            return make_error_response("INVALID_DESTINATION", err, 400)
+            
+        raw_pref = body.get('preference', 'LESS_CROWDED')
+        preference = validate_visitor_preference(raw_pref)
 
         engine = get_visitor_engine()
         rec = engine.get_recommendation(destination_id, preference)
         return jsonify(rec)
     except Exception as e:
-        return jsonify({'error': 'Recommendation failed', 'message': str(e)}), 500
+        return make_error_response("RECOMMENDATION_FAILED", "Could not generate visitor guidance", 500)
 
 
 @visitor_bp.route('/api/visitor/conditions', methods=['GET'])
@@ -74,4 +81,4 @@ def get_current_conditions():
             'data_label': 'SIMULATED · AGGREGATED',
         })
     except Exception as e:
-        return jsonify({'error': 'Failed to load conditions', 'message': str(e)}), 500
+        return make_error_response("CONDITIONS_LOAD_FAILED", str(e), 500)

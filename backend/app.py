@@ -1,9 +1,10 @@
 import logging
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from config import Config
 from data.db import init_db, get_db
 from validation import validate_database_integrity
+from utils.errors import make_error_response
 
 from routes.demo import demo_bp
 from routes.overview import overview_bp
@@ -22,14 +23,44 @@ from routes.visitor import visitor_bp
 from routes.privacy import privacy_bp
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.INFO if Config.ENV == 'production' else logging.INFO,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
 )
 logger = logging.getLogger('pravaah')
 
 def create_app():
+    Config.validate_startup_config()
+    
     app = Flask(__name__)
     CORS(app, origins=Config.CORS_ORIGINS)
+
+    # Security Headers Middleware
+    @app.after_request
+    def set_security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        # Relaxed CSP for map tiles and styles
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; "
+            "img-src 'self' data: https: blob:; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' data: https://fonts.gstatic.com; "
+            "connect-src 'self' http: https: ws: wss:;"
+        )
+        return response
+
+    # Global 404 Handler
+    @app.errorhandler(404)
+    def resource_not_found(e):
+        return make_error_response("NOT_FOUND", "The requested endpoint or resource was not found", 404)
+
+    # Global 500 Handler
+    @app.errorhandler(500)
+    def internal_server_error(e):
+        logger.error(f"Internal server error: {e}", exc_info=True)
+        return make_error_response("INTERNAL_SERVER_ERROR", "An unexpected server error occurred", 500)
 
     with app.app_context():
         try:
@@ -42,7 +73,7 @@ def create_app():
             logger.error(f"Failed to initialize database: {e}", exc_info=True)
             raise e
 
-    # NOTE: demo_bp registers its own /api/health, replacing the old bare health route
+    # Blueprint Registration
     app.register_blueprint(demo_bp)
     app.register_blueprint(overview_bp)
     app.register_blueprint(zones_bp)

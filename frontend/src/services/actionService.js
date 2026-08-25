@@ -1,28 +1,26 @@
 /**
  * PRAVAAH Action & Intervention Engine API Client
- * Phase 8 — Multi-candidate recommendations, counterfactual simulation, and approvals
+ * Phase 13 — Standardized Axios Client with Timeout & Error Handling
  */
 
-import axios from 'axios'
-
-const API_BASE = '/api/actions'
+import api from '../lib/api'
 
 export async function getActionRecommendations() {
-  const res = await axios.get(`${API_BASE}/recommendations`)
+  const res = await api.get('/actions/recommendations')
   return res.data
 }
 
 export async function simulateAction(actionId) {
-  const res = await axios.post(`${API_BASE}/simulate`, { action_id: actionId })
+  const res = await api.post('/actions/simulate', { action_id: actionId })
   return res.data
 }
 
 export async function approveAction(actionId) {
-  const res = await axios.post(`${API_BASE}/${actionId}/approve`)
+  const res = await api.post(`/actions/${actionId}/approve`)
   return res.data
 }
 
 export async function resetActions() {
-  const res = await axios.post(`${API_BASE}/reset`)
+  const res = await api.post('/actions/reset')
   return res.data
 }

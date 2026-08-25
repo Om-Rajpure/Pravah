@@ -1,26 +1,31 @@
 /**
  * PRAVAAH Demo Mode Service
- * Phase 12 — Demo controls, status polling, event sequencing
+ * Phase 13 — Demo controls, readiness, and status polling
  */
 
-import axios from 'axios'
+import api from '../lib/api'
 
 export async function getDemoStatus() {
-  const res = await axios.get('/api/demo/status')
+  const res = await api.get('/demo/status')
   return res.data
 }
 
 export async function resetDemo() {
-  const res = await axios.post('/api/demo/reset')
+  const res = await api.post('/demo/reset')
   return res.data
 }
 
 export async function nextDemoEvent() {
-  const res = await axios.post('/api/demo/next-event')
+  const res = await api.post('/demo/next-event')
   return res.data
 }
 
 export async function getHealth() {
-  const res = await axios.get('/api/health')
+  const res = await api.get('/health')
+  return res.data
+}
+
+export async function getReadiness() {
+  const res = await api.get('/ready')
   return res.data
 }

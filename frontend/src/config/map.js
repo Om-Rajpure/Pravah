@@ -1,6 +1,6 @@
 /**
  * PRAVAAH Central Map Configuration
- * Phase 3 / Step 4 — MapLibre GL JS & OpenFreeMap Infrastructure
+ * Phase 13 — Environment-aware MapLibre GL JS & OpenFreeMap Infrastructure
  */
 
 export const MAP_STYLES = {
@@ -10,10 +10,9 @@ export const MAP_STYLES = {
 }
 
 // Default style: OpenFreeMap Positron (clean, light, restrained, free)
-export const DEFAULT_MAP_STYLE = MAP_STYLES.OPENFREEMAP_POSITRON
+export const DEFAULT_MAP_STYLE = import.meta.env.VITE_MAP_STYLE_URL || MAP_STYLES.OPENFREEMAP_POSITRON
 
 // Central Mumbai operational view coordinates [lng, lat]
-// Encompasses South Mumbai, Lalbaug, Curry Road, Dadar, Parel, Byculla, Girgaon, Thane, Vashi, Navi Mumbai
 export const DEFAULT_CENTER = [72.8400, 18.9950]
 
 export const DEFAULT_ZOOM = 11.6

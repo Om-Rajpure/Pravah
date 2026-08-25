@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Play, Pause, RotateCcw, SkipForward, Clapperboard } from 'lucide-react'
+import { Play, Pause, RotateCcw, SkipForward, Clapperboard, Compass } from 'lucide-react'
 import { getDemoStatus, resetDemo, nextDemoEvent } from '../../services/demoService'
 import { startSimulation, pauseSimulation, stepSimulation } from '../../services/simulationService'
+import JudgeTourModal from './JudgeTourModal'
 
 const EVENT_COLORS = {
   'T00_normal':         'bg-low/10 border-low/30 text-low',
@@ -16,6 +17,7 @@ export function DemoModeBar({ onReset }) {
   const [demo, setDemo] = useState(null)
   const [simStatus, setSimStatus] = useState('PAUSED')
   const [loading, setLoading] = useState(false)
+  const [tourOpen, setTourOpen] = useState(false)
 
   const refresh = async () => {
     try {
@@ -77,89 +79,104 @@ export function DemoModeBar({ onReset }) {
   const total = demo?.total_events ?? 6
 
   return (
-    <div className="bg-graphite text-white rounded-card border border-border/30 px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-3 shadow-subtle">
-      {/* Identity */}
-      <div className="flex items-center gap-2 min-w-fit">
-        <Clapperboard className="w-4 h-4 text-terracotta flex-shrink-0" />
-        <div>
-          <span className="text-[10px] uppercase tracking-widest font-bold text-white/60 block leading-none">Demo Mode</span>
-          <span className="text-[11px] font-bold text-white leading-none">SIMULATION</span>
+    <>
+      <div className="bg-graphite text-white rounded-card border border-border/30 px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-3 shadow-subtle">
+        {/* Identity */}
+        <div className="flex items-center gap-2 min-w-fit">
+          <Clapperboard className="w-4 h-4 text-terracotta flex-shrink-0" />
+          <div>
+            <span className="text-[10px] uppercase tracking-widest font-bold text-white/60 block leading-none">Demo Mode</span>
+            <span className="text-[11px] font-bold text-white leading-none">SIMULATION</span>
+          </div>
         </div>
-      </div>
 
-      {/* Divider */}
-      <div className="w-px h-8 bg-white/10 hidden sm:block" />
+        {/* Divider */}
+        <div className="w-px h-8 bg-white/10 hidden sm:block" />
 
-      {/* Current Event */}
-      {event && (
-        <div className={`flex items-center gap-2 px-2.5 py-1 rounded border text-[11px] font-bold ${eventColor}`}>
-          <span className="text-[9px] font-bold opacity-70">EVENT {idx + 1}/{total}</span>
-          <span>{event.label}</span>
-        </div>
-      )}
-
-      {/* Disruption / Scenario badge */}
-      {demo?.active_scenario && (
-        <span className="text-[10px] font-bold bg-critical/10 border border-critical/30 text-critical px-2 py-0.5 rounded">
-          ⚡ {demo.active_scenario.replace(/-/g, ' ').toUpperCase()}
-        </span>
-      )}
-
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Sim time */}
-      {demo?.simulation_time && (
-        <span className="text-[11px] font-mono text-white/60">{demo.simulation_time}</span>
-      )}
-
-      {/* Controls */}
-      <div className="flex items-center gap-1.5">
-        {simStatus === 'RUNNING' ? (
-          <button
-            onClick={handlePause}
-            disabled={loading}
-            title="Pause simulation"
-            className="w-7 h-7 rounded flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-40"
-          >
-            <Pause className="w-3.5 h-3.5" />
-          </button>
-        ) : (
-          <button
-            onClick={handlePlay}
-            disabled={loading}
-            title="Play simulation"
-            className="w-7 h-7 rounded flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-40"
-          >
-            <Play className="w-3.5 h-3.5" />
-          </button>
+        {/* Current Event */}
+        {event && (
+          <div className={`flex items-center gap-2 px-2.5 py-1 rounded border text-[11px] font-bold ${eventColor}`}>
+            <span className="text-[9px] font-bold opacity-70">EVENT {idx + 1}/{total}</span>
+            <span>{event.label}</span>
+          </div>
         )}
 
+        {/* Disruption / Scenario badge */}
+        {demo?.active_scenario && (
+          <span className="text-[10px] font-bold bg-critical/10 border border-critical/30 text-critical px-2 py-0.5 rounded">
+            ⚡ {demo.active_scenario.replace(/-/g, ' ').toUpperCase()}
+          </span>
+        )}
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Sim time */}
+        {demo?.simulation_time && (
+          <span className="text-[11px] font-mono text-white/60 hidden md:inline">{demo.simulation_time}</span>
+        )}
+
+        {/* Guided Judge Tour Button */}
         <button
-          onClick={handleNext}
-          disabled={loading || isFinal}
-          title="Skip to next event"
-          className="w-7 h-7 rounded flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-40"
+          onClick={() => setTourOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1 bg-terracotta hover:bg-terracotta-dark text-white rounded text-xs font-bold transition-colors shadow-sm"
+          title="Open interactive Judge Tour"
         >
-          <SkipForward className="w-3.5 h-3.5" />
+          <Compass className="w-3.5 h-3.5" />
+          <span>Judge Tour</span>
         </button>
 
-        <button
-          onClick={handleReset}
-          disabled={loading}
-          title="Reset demo to baseline"
-          className="w-7 h-7 rounded flex items-center justify-center bg-terracotta/30 hover:bg-terracotta/50 transition-colors disabled:opacity-40"
-        >
-          <RotateCcw className="w-3.5 h-3.5 text-terracotta-light" />
-        </button>
+        {/* Controls */}
+        <div className="flex items-center gap-1.5">
+          {simStatus === 'RUNNING' ? (
+            <button
+              onClick={handlePause}
+              disabled={loading}
+              title="Pause simulation"
+              className="w-7 h-7 rounded flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-40"
+            >
+              <Pause className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <button
+              onClick={handlePlay}
+              disabled={loading}
+              title="Play simulation"
+              className="w-7 h-7 rounded flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-40"
+            >
+              <Play className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          <button
+            onClick={handleNext}
+            disabled={loading || isFinal}
+            title="Skip to next event"
+            className="w-7 h-7 rounded flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors disabled:opacity-40"
+          >
+            <SkipForward className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            onClick={handleReset}
+            disabled={loading}
+            title="Reset demo to baseline"
+            className="w-7 h-7 rounded flex items-center justify-center bg-terracotta/30 hover:bg-terracotta/50 transition-colors disabled:opacity-40"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-terracotta-light" />
+          </button>
+        </div>
+
+        {/* Event description tooltip */}
+        {event?.description && (
+          <p className="w-full text-[10px] text-white/50 pt-0.5 leading-snug hidden sm:block">
+            {event.description}
+          </p>
+        )}
       </div>
 
-      {/* Event description tooltip */}
-      {event?.description && (
-        <p className="w-full text-[10px] text-white/50 pt-0.5 leading-snug hidden sm:block">
-          {event.description}
-        </p>
-      )}
-    </div>
+      {/* Interactive Tour Modal */}
+      <JudgeTourModal isOpen={tourOpen} onClose={() => setTourOpen(false)} />
+    </>
   )
 }

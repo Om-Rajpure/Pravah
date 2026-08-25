@@ -1,19 +1,19 @@
 /**
  * PRAVAAH Explainability & Decision Audit API Client
- * Phase 10 — Glass Box reasoning, decision trace, and audit logs
+ * Phase 13 — Standardized Axios Client with Timeout & Error Handling
  */
 
-import axios from 'axios'
+import api from '../lib/api'
 
 export async function getPredictionExplanation(zoneId = 'curry-road', detail = 'operational') {
-  const res = await axios.get(`/api/explanations/prediction/${zoneId}`, {
+  const res = await api.get(`/explanations/prediction/${zoneId}`, {
     params: { detail }
   })
   return res.data
 }
 
 export async function getInterventionExplanation(actionId = 'act-redirect-curry-road-thane-18', detail = 'operational') {
-  const res = await axios.get(`/api/explanations/intervention/${actionId}`, {
+  const res = await api.get(`/explanations/intervention/${actionId}`, {
     params: { detail }
   })
   return res.data
@@ -21,6 +21,6 @@ export async function getInterventionExplanation(actionId = 'act-redirect-curry-
 
 export async function getAuditTrail(type = null) {
   const params = type && type !== 'ALL' ? { type } : {}
-  const res = await axios.get('/api/audit', { params })
+  const res = await api.get('/audit', { params })
   return res.data
 }

@@ -1,38 +1,36 @@
 /**
  * PRAVAAH Scenario Engine API Client
- * Phase 9 — What-If Simulation, Scenario Overlays, and 3-Way Scorecards
+ * Phase 13 — Standardized Axios Client with Timeout & Error Handling
  */
 
-import axios from 'axios'
-
-const API_BASE = '/api/scenarios'
+import api from '../lib/api'
 
 export async function getScenarios() {
-  const res = await axios.get(API_BASE)
+  const res = await api.get('/scenarios')
   return res.data
 }
 
 export async function getScenarioDetail(scenarioId) {
-  const res = await axios.get(`${API_BASE}/${scenarioId}`)
+  const res = await api.get(`/scenarios/${scenarioId}`)
   return res.data
 }
 
 export async function simulateScenario(scenarioId) {
-  const res = await axios.post(`${API_BASE}/simulate`, { scenario_id: scenarioId })
+  const res = await api.post('/scenarios/simulate', { scenario_id: scenarioId })
   return res.data
 }
 
 export async function activateScenario(scenarioId) {
-  const res = await axios.post(`${API_BASE}/activate`, { scenario_id: scenarioId })
+  const res = await api.post('/scenarios/activate', { scenario_id: scenarioId })
   return res.data
 }
 
 export async function resetScenario() {
-  const res = await axios.post(`${API_BASE}/reset`)
+  const res = await api.post('/scenarios/reset')
   return res.data
 }
 
 export async function getCurrentScenario() {
-  const res = await axios.get(`${API_BASE}/current`)
+  const res = await api.get('/scenarios/current')
   return res.data
 }

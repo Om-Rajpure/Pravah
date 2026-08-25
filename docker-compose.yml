@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pravaah-backend
+    environment:
+      - PRAVAAH_ENV=production
+      - PRAVAAH_DEMO_MODE=true
+      - DEMO_SEED=20260908
+      - FLASK_HOST=0.0.0.0
+      - FLASK_PORT=5000
+      - CORS_ORIGINS=http://localhost,http://localhost:80,http://localhost:5173
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pravaah-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  default:
+    name: pravaah-network
