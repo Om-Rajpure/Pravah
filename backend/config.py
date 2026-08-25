@@ -16,12 +16,15 @@ class Config:
     
     # Network / Server
     HOST = os.environ.get('FLASK_HOST', '0.0.0.0')
-    PORT = int(os.environ.get('FLASK_PORT', 5000))
-    
-    # CORS Origins
+    # Render injects PORT; fall back to FLASK_PORT for local dev
+    PORT = int(os.environ.get('PORT', os.environ.get('FLASK_PORT', 5000)))
+
+    # CORS Origins — comma-separated list via CORS_ORIGINS env var
+    # Default includes localhost dev origins + production Vercel frontend
     _raw_cors = os.environ.get(
         'CORS_ORIGINS',
-        'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000'
+        'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,'
+        'https://pravah-git-main-omrajpure3-8253s-projects.vercel.app'
     )
     CORS_ORIGINS = [origin.strip() for origin in _raw_cors.split(',') if origin.strip()]
     

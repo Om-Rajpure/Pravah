@@ -6,6 +6,7 @@ from data.db import init_db, get_db
 from validation import validate_database_integrity
 from utils.errors import make_error_response
 
+from routes.health import health_bp
 from routes.demo import demo_bp
 from routes.overview import overview_bp
 from routes.zones import zones_bp
@@ -74,6 +75,7 @@ def create_app():
             raise e
 
     # Blueprint Registration
+    app.register_blueprint(health_bp)
     app.register_blueprint(demo_bp)
     app.register_blueprint(overview_bp)
     app.register_blueprint(zones_bp)

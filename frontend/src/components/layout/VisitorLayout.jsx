@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import * as Icons from 'lucide-react'
-import { VISITOR_NAV_ITEMS } from '../../lib/constants'
+import { VISITOR_NAV_ITEMS } from '../../lib/constants.js'
 
 export default function VisitorLayout() {
   const location = useLocation()
