@@ -9,14 +9,15 @@ import { ErrorState } from '../../components/shared/ErrorState'
 import { MumbaiMap } from '../../components/map/MumbaiMap'
 import { SimulationBar } from '../../components/simulation/SimulationBar'
 import { getOverview, getMapState } from '../../lib/api'
-import { 
-  getSimulationState, 
-  getSimulationTime, 
-  stepSimulation, 
-  startSimulation, 
-  pauseSimulation, 
-  resetSimulation 
+import {
+  getSimulationState,
+  getSimulationTime,
+  stepSimulation,
+  startSimulation,
+  pauseSimulation,
+  resetSimulation
 } from '../../services/simulationService'
+import { getActionRecommendations } from '../../services/actionService'
 
 export default function Overview() {
   const [data, setData] = useState(null)
@@ -26,6 +27,7 @@ export default function Overview() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [simLoading, setSimLoading] = useState(false)
+  const [simResult, setSimResult] = useState(null)
   const timerRef = useRef(null)
 
   const fetchData = async () => {
@@ -116,6 +118,7 @@ export default function Overview() {
       const res = await resetSimulation()
       setSimState(res.state)
       setSimStatus('PAUSED')
+      setSimResult(null)
     } catch (err) {
       console.error('Failed to reset simulation:', err)
     } finally {
@@ -123,8 +126,25 @@ export default function Overview() {
     }
   }
 
-  const handleSimulateAction = (actionDetails) => {
-    alert(`Simulating intervention for: ${actionDetails?.name || 'Selected Corridor'}\n\nExpected Result: Dispersing 18% flow toward Thane/Vashi buffers.\nPressure reduces to 76% in ~45 minutes.`)
+  const handleSimulateAction = async () => {
+    setSimLoading(true)
+    try {
+      const rec = await getActionRecommendations()
+      const impact = rec?.impact
+      if (impact) {
+        setSimResult({
+          before: impact.target_pressure_before,
+          after: impact.target_pressure_after,
+          reduction: impact.pressure_reduction,
+          criticalBefore: impact.critical_zones_before,
+          criticalAfter: impact.critical_zones_after,
+        })
+      }
+    } catch (err) {
+      console.error('Simulation action failed:', err)
+    } finally {
+      setSimLoading(false)
+    }
   }
 
   if (loading) return <LoadingState message="Loading city operations overview..." />
@@ -213,20 +233,46 @@ export default function Overview() {
       
       {/* Primary Recommendation Card */}
       {data.recommendation && (
-        <RecommendationCard 
+        <RecommendationCard
           description={data.recommendation.description}
           expectedResult={data.recommendation.expected_result}
-          actionLabel={data.recommendation.action_label}
-          onAction={() => handleSimulateAction(data.recommendation)}
+          actionLabel={simLoading ? 'Simulating…' : data.recommendation.action_label}
+          onAction={handleSimulateAction}
         />
       )}
-      
+
+      {/* Simulated Impact Result (shown after clicking Simulate) */}
+      {simResult && (
+        <div className="bg-low/5 border border-low/30 rounded-card p-4 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase font-bold text-low tracking-wider mb-1">
+              SIMULATION · Counterfactual Impact
+            </p>
+            <p className="text-sm text-text-primary">
+              Curry Road pressure: <strong className="text-critical">{simResult.before}</strong>
+              {' → '}
+              <strong className="text-low">{simResult.after}</strong>
+              {' (−'}{simResult.reduction}{' pts) ·  Critical zones: '}
+              <strong>{simResult.criticalBefore} → {simResult.criticalAfter}</strong>
+            </p>
+            <p className="text-[10.5px] text-text-muted mt-0.5">SIMULATION — not applied to live state.</p>
+          </div>
+          <button
+            onClick={() => setSimResult(null)}
+            className="text-xs text-text-secondary hover:text-text-primary transition-colors underline underline-offset-2"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Data Source Label */}
       <div className="text-center pt-2 pb-1">
         <p className="text-[10.5px] text-text-muted tracking-wide">
-          Prototype data · Deterministic crowd simulator calibrated to real Mumbai geography
+          SIMULATION · Deterministic crowd model calibrated to real Mumbai geography · DEMO_SEED=20260908
         </p>
       </div>
     </div>
   )
 }
+

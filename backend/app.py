@@ -5,7 +5,7 @@ from config import Config
 from data.db import init_db, get_db
 from validation import validate_database_integrity
 
-from routes.health import health_bp
+from routes.demo import demo_bp
 from routes.overview import overview_bp
 from routes.zones import zones_bp
 from routes.hotels import hotels_bp
@@ -18,6 +18,8 @@ from routes.predictions import predictions_bp
 from routes.actions import actions_bp
 from routes.scenarios import scenarios_bp
 from routes.explainability import explainability_bp
+from routes.visitor import visitor_bp
+from routes.privacy import privacy_bp
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,11 +29,8 @@ logger = logging.getLogger('pravaah')
 
 def create_app():
     app = Flask(__name__)
-    
-    # Enable CORS
     CORS(app, origins=Config.CORS_ORIGINS)
-    
-    # Initialize DuckDB & deterministic seed
+
     with app.app_context():
         try:
             logger.info("Initializing PRAVAAH DuckDB data architecture...")
@@ -42,9 +41,9 @@ def create_app():
         except Exception as e:
             logger.error(f"Failed to initialize database: {e}", exc_info=True)
             raise e
-            
-    # Register blueprints
-    app.register_blueprint(health_bp)
+
+    # NOTE: demo_bp registers its own /api/health, replacing the old bare health route
+    app.register_blueprint(demo_bp)
     app.register_blueprint(overview_bp)
     app.register_blueprint(zones_bp)
     app.register_blueprint(hotels_bp)
@@ -57,13 +56,11 @@ def create_app():
     app.register_blueprint(actions_bp)
     app.register_blueprint(scenarios_bp)
     app.register_blueprint(explainability_bp)
-    
+    app.register_blueprint(visitor_bp)
+    app.register_blueprint(privacy_bp)
+
     return app
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(
-        host=Config.HOST,
-        port=Config.PORT,
-        debug=Config.DEBUG
-    )
+    app.run(host=Config.HOST, port=Config.PORT, debug=Config.DEBUG)

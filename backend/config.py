@@ -2,7 +2,8 @@ import os
 
 class Config:
     SERVICE_NAME = 'pravaah'
-    VERSION = '0.3.0'
+    VERSION = '1.0.0'
+    DEMO_MODE = os.environ.get('PRAVAAH_DEMO_MODE', 'true').lower() == 'true'
     DEBUG = os.environ.get('FLASK_DEBUG', 'true').lower() == 'true'
     HOST = os.environ.get('FLASK_HOST', '0.0.0.0')
     PORT = int(os.environ.get('FLASK_PORT', 5000))

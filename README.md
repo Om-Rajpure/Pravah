@@ -1,163 +1,180 @@
-# PRAVAAH (प्रवाह) — Real-Time City Flow & Mobility Intelligence Platform
+# PRAVAAH (प्रवाह)
+## Intelligent Travel Resilience for Mega-Event Mumbai
 
-> **Calm intelligence controlling a complex city.**  
-> Built for large-scale mega-event operations and urban crowd intelligence, calibrated to Mumbai during Ganesh Chaturthi.
+> **The city has capacity. The problem is distribution.**
 
----
-
-## 🏛️ Overview
-
-**PRAVAAH** is a city operations and mobility intelligence platform designed for municipal authorities, event control rooms, transit operators, and hospitality coordinators. Instead of presenting generic SaaS metrics or glowing cyber dashboards, PRAVAAH brings together real geographic constraints, multimodal transit loads, hotel occupancy distribution, and deterministic crowd modeling to recommend calm, actionable urban interventions.
+PRAVAAH is a city operations intelligence platform designed for Ganesh Chaturthi 2026 — Mumbai. It models the city as a dynamic crowd network, predicts where pressure will emerge, simulates interventions before recommending them, and explains every decision transparently.
 
 ---
 
-## 🎨 Visual Identity & Design System
+## The Problem
 
-PRAVAAH employs an architectural, operations-grade color system designed for prolonged control-room monitoring without eye fatigue:
-
-| Token | Hex | Usage |
-| :--- | :--- | :--- |
-| **Warm Stone** | `#F5F2EC` | Primary application canvas |
-| **Soft Ivory** | `#FBFAF7` | Primary surface, operational cards & panels |
-| **Secondary Surface** | `#ECE8E0` | Filters, inactive controls, table headers |
-| **Dark Graphite** | `#292827` | Headings, primary metrics, high-priority text, sidebar canvas |
-| **Secondary Text** | `#6B6761` | Descriptions, metadata, timestamps |
-| **Terracotta / Rust** | `#B85C3E` | Primary brand accent, recommendations, highlights |
-| **Dark Terracotta** | `#91452F` | Hover states, recommendation headings |
-| **Light Terracotta** | `#E8C9BC` | Action preview badges, selected areas |
-| **Very Light Terracotta**| `#F4E7E1` | Recommendation card backgrounds |
-| **Muted Slate** | `#536873` | Transit network, railway lines, road infrastructure |
-| **Semantic Critical** | `#A94338` | Severe crowd pressure (≥85%), critical alerts |
-| **Semantic Warning** | `#B8893D` | Moderate crowd pressure (50–69%) |
-| **Semantic Low** | `#52755F` | Spare capacity, healthy status (<50%) |
+Ganesh Chaturthi draws 10–15 million visitors to Mumbai over 10 days.
+Pressure concentrates in specific corridor nodes — not because the city lacks capacity, but because flow is not distributed.
+Bottlenecks cascade. By the time they are visible, they are already difficult to resolve.
 
 ---
 
-## 📦 Project Architecture
+## The Solution
+
+PRAVAAH gives operators a complete intelligence loop:
+
+| Stage | What it does |
+|---|---|
+| **SEE** | Real-time crowd pressure across 11 monitored zones |
+| **PREDICT** | Multi-horizon forecasts (30m → 3h) using network-aware ML |
+| **RECOMMEND** | Counterfactually tested intervention with optimal dosage |
+| **SIMULATE** | "What if we redirect 18%?" — answer before committing |
+| **EXPLAIN** | Glass Box reasoning chain for every decision |
+| **WHAT-IF** | Inject disruptions (rain, train failure, road closure) |
+| **GOVERN** | Show data is handled with aggregation and no individual tracking |
+| **GUIDE** | Turn city intelligence into plain visitor travel guidance |
+
+---
+
+## Core Capabilities
+
+- **Crowd Simulation**: 10,000 synthetic visitors, 5-minute discrete steps, deterministic seed
+- **Network Model**: 30 nodes, 76 directed edges, Dijkstra routing, versioned edge closure
+- **Prediction Engine**: LightGBM residual model (MAE: 1.026) + network propagation baseline
+- **Intervention Engine**: Multi-objective scored candidates with counterfactual simulation
+- **Scenario Injector**: Central Line Disruption, Heavy Rain, Road Closure — 5-stage cascade
+- **Glass Box**: Plain-language trace stages, feature drivers, confidence, assumptions, audit trail
+- **Privacy Layer**: K-anonymity (K=10), data minimization, public-safe serializers
+- **Visitor Mode**: Mobile-first destination search, crowd forecasts, disruption-aware alternatives
+
+---
+
+## Architecture
 
 ```
-pravaah/
-├── backend/
-│   ├── app.py                  # Flask Application Factory & Blueprint Registration
-│   ├── config.py               # Central configuration & DEMO_SEED
-│   ├── validation.py           # Data integrity & boundary validation suite
-│   ├── requirements.txt        # Python dependencies (Flask, DuckDB, Flask-CORS)
-│   ├── data/
-│   │   ├── schema.py           # DuckDB DDL schemas (11 relational tables)
-│   │   ├── seed.py             # Deterministic Mumbai synthetic data generator
-│   │   └── db.py               # DuckDB connection & initialization manager
-│   ├── services/
-│   │   ├── city_service.py     # System KPIs, alerts, recommendation engine
-│   │   ├── zone_service.py     # Multi-zone analytics & drilldowns
-│   │   ├── hotel_service.py    # Accommodation clusters & occupancy stats
-│   │   ├── transport_service.py# Railway stations, lines, & road network
-│   │   ├── welfare_service.py  # Civic support amenities (water, medical, etc.)
-│   │   └── map_service.py      # Unified multi-layer map state
-│   └── routes/
-│       ├── health.py           # Health check endpoint
-│       ├── overview.py         # /api/overview endpoint
-│       ├── zones.py            # /api/zones and /api/zones/<id>
-│       ├── hotels.py           # /api/hotels endpoint
-│       ├── transport.py        # /api/transport endpoint
-│       ├── welfare.py          # /api/welfare endpoint
-│       └── map.py              # /api/map/state endpoint
-├── frontend/
-│   ├── index.html              # HTML entry point
-│   ├── package.json            # React, Vite, Tailwind CSS, Lucide icons, Recharts
-│   ├── vite.config.js          # Vite config with /api proxy to backend
-│   ├── tailwind.config.js      # PRAVAAH architectural design tokens
-│   └── src/
-│       ├── App.jsx             # React router configuration
-│       ├── main.jsx            # React root mount
-│       ├── styles/
-│       │   └── index.css       # Tailwind CSS & custom scrollbar variables
-│       ├── lib/
-│       │   ├── api.js          # Typed Axios client methods for all endpoints
-│       │   └── constants.js    # Status thresholds, navigation items, metadata
-│       ├── components/
-│       │   ├── layout/         # Header, Sidebar, ControlRoomLayout, VisitorLayout
-│       │   ├── shared/         # LoadingState, ErrorState, EmptyState
-│       │   └── ui/             # KPICard, RecommendationCard, AlertCard, StatusBadge, Button, Card, Panel
-│       └── pages/
-│           ├── control-room/   # Overview, LiveCity, Hospitality, Mobility, Welfare, etc.
-│           └── visitor/        # Plan, Route, Stay, Support mobile-first flows
-└── README.md
+Simulation (10k agents, 5-min steps)
+       ↓
+Network (30 nodes, 76 edges, Dijkstra)
+       ↓
+Prediction (LightGBM + network baseline, 4 horizons)
+       ↓
+Intervention (candidate generation → counterfactual → scoring)
+       ↓
+Scenario (overlay model, isolated counterfactual, 3-way scorecard)
+       ↓
+Explainability (trace stages, drivers, versions, audit trail)
+       ↓
+Privacy (aggregation, suppression, public-safe serializers)
+       ↓
+         ┌────────────────┐       ┌──────────────────┐
+         │  OPERATOR VIEW │       │   VISITOR MODE   │
+         │  Control Room  │       │  Mobile-first    │
+         │  Actions       │       │  Crowd level     │
+         │  Glass Box     │       │  Alternatives    │
+         │  Scenarios     │       │  Privacy Center  │
+         └────────────────┘       └──────────────────┘
 ```
 
 ---
 
-## 🗄️ Synthetic Data Foundation (Phase 2)
+## Technology Stack
 
-All city data is deterministically seeded (`DEMO_SEED = 20260908`) and stored locally using **DuckDB**. The data models authentic Mumbai geographic and logistical relationships during Ganesh Chaturthi:
-
-- **11 Monitored Zones**: Lalbaug (epicenter), Curry Road (critical transit bottle-neck), South Mumbai, Girgaon, Dadar, Parel, Byculla, Andheri, and spare-capacity buffer zones (Thane, Vashi, Navi Mumbai).
-- **Multi-Modal Transport Nodes**: Central Line, Western Line, Harbour Line stations with calibrated passenger capacities and current hourly loads.
-- **Accommodation Clusters**: Realistically modeled hotel clusters showing 94% occupancy in South Mumbai vs 43–48% available capacity in eastern buffer zones.
-- **Civic Welfare Amenities**: Medical aid posts, drinking water stations, mobile sanitation units, and senior rest centers.
-- **Road Network & Corridors**: Major arterial avenues (Dr. BA Road, Eastern Freeway, Tilak Bridge) with traffic flow and restriction states.
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, Vite, Tailwind CSS, Lucide icons, Recharts |
+| Map | MapLibre GL JS + OpenFreeMap |
+| Backend | Flask (Python 3.10+), Flask-CORS |
+| Database | DuckDB (in-memory) |
+| Simulation | NumPy discrete-time agent engine |
+| Graph | NetworkX DiGraph + Dijkstra |
+| ML | LightGBM residual model |
 
 ---
 
-## 🚀 Quick Start Guide
+## Running Locally
 
 ### Prerequisites
 - Python 3.10+
 - Node.js 18+ and npm
 
-### 1. Backend Setup & Run
+### Backend
 
 ```bash
 cd backend
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Run Flask server (defaults to port 5000)
 python app.py
 ```
 
-*The backend will automatically initialize the DuckDB database and validate data integrity on startup.*
+Backend runs at `http://localhost:5000`.
 
-### 2. Frontend Setup & Run
+### Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies (on Windows PowerShell use npm.cmd or enable script execution)
-npm.cmd install
-
-# Start Vite development server
+npm.cmd install        # Windows PowerShell
 npm.cmd run dev
 ```
 
-> **Windows PowerShell Note**: If PowerShell reports `running scripts is disabled on this system`, run `npm.cmd run dev` or run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` in your PowerShell window.
+Open `http://localhost:5173`.
 
-Open your browser at `http://localhost:5173`.
-
----
-
-## 📡 REST API Reference
-
-| Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/api/health` | `GET` | Service health status and version |
-| `/api/overview` | `GET` | Core KPIs (City Pressure, Predicted Peak, Hotels, Transport, Alerts) |
-| `/api/zones` | `GET` | All 11 monitored zones with current crowd pressures and capacities |
-| `/api/zones/<id>` | `GET` | Zone drilldown (stations, hotels, crowd metrics, predictions) |
-| `/api/hotels` | `GET` | Hotel clusters, total/available rooms, price ranges, and zone breakdown |
-| `/api/transport` | `GET` | Railway stations, transit lines, and road network status |
-| `/api/welfare` | `GET` | Welfare support amenities categorized by type and active status |
-| `/api/map/state` | `GET` | Unified multi-layer geographic state ready for map visualization |
+> **Windows PowerShell**: Use `npm.cmd run dev` or run `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` first.
 
 ---
 
-## 🛡️ Implementation Status
+## Quick Demo
 
-- [x] **Phase 1**: Control Room + Visitor Shell & Navigation Architecture
-- [x] **Phase 2**: Synthetic City Data Architecture, DuckDB Storage Layer, REST APIs & Visual Identity Refinement
-- [ ] **Phase 3**: MapLibre Geographic Centerpiece & Interactive Overlays *(Upcoming)*
-- [ ] **Phase 4–20**: Live Sensors, Predictions, Counterfactual Simulations & Glass Box Intelligence *(Upcoming)*
+1. Start backend and frontend.
+2. Open `http://localhost:5173`.
+3. The **Demo Mode Bar** is shown at the top of the Operator view.
+4. Press **▶ Play** to start the simulation.
+5. Press **⏭ Next Event** to advance through the canonical demo sequence.
+6. Follow the narrative: Forecast → Recommendation → Simulation → Disruption → New Recommendation → Glass Box → Visitor Mode → Privacy.
+7. Press **🔄 Reset** to return to baseline at any point.
+
+Full demo walkthrough: [`docs/demo.md`](docs/demo.md)
 
 ---
 
-*Prototype data · Simulated + calibrated to real geography*
+## Demo Mode
+
+Demo Mode is always active by default. The **same seed** (`DEMO_SEED=20260908`) produces identical outputs on every reset.
+
+The 6 canonical demo events are:
+1. **T+00** Normal Conditions
+2. **T+15** Pressure Rising
+3. **T+30** Forecast Warning
+4. **T+50** Recommendation Ready
+5. **T+60** Central Line Disruption
+6. **T+80** New Recommendation (post-disruption)
+
+---
+
+## Privacy
+
+- PRAVAAH does not require personal data to guide visitors.
+- Zone pressure is aggregated (not individual-level).
+- Groups below K=10 visitors are suppressed in public outputs.
+- Approximate location is optional and session-scoped.
+- Visitor API endpoints expose no PII, dosage values, or operator internals.
+- Synthetic visitor movements are clearly labelled: `SIMULATED · AGGREGATED`.
+
+Full privacy documentation: [`docs/privacy.md`](docs/privacy.md)
+
+---
+
+## Limitations
+
+- All visitor data is **synthetic** (no live GPS or transit API integration).
+- The network covers key corridors only (30 nodes / 76 edges — not the full Mumbai network).
+- No operator authentication or access control in this prototype.
+- State is in-memory; server restart resets the simulation.
+- Map tiles require an internet connection.
+
+---
+
+## Documentation
+
+- [`docs/api.md`](docs/api.md) — Full API reference
+- [`docs/demo.md`](docs/demo.md) — Demo walkthrough and controls
+- [`docs/technical-guide.md`](docs/technical-guide.md) — Architecture and system design
+- [`docs/privacy.md`](docs/privacy.md) — Privacy and data governance
+
+---
+
+*PRAVAAH v1.0.0 · Demo Prototype · Simulated + calibrated to real Mumbai geography · DEMO_SEED=20260908*

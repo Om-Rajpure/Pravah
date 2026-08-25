@@ -11,6 +11,9 @@ import Welfare from './pages/control-room/Welfare'
 import Scenarios from './pages/control-room/Scenarios'
 import Impact from './pages/control-room/Impact'
 import GlassBox from './pages/control-room/GlassBox'
+import VisitorHome from './pages/visitor/Home'
+import VisitorDestination from './pages/visitor/Destination'
+import VisitorPrivacy from './pages/visitor/Privacy'
 import Plan from './pages/visitor/Plan'
 import VisitorRoute from './pages/visitor/Route'
 import Stay from './pages/visitor/Stay'
@@ -22,22 +25,24 @@ export default function App() {
       <Route path="/" element={<Navigate to="/control-room/overview" replace />} />
       <Route path="/control-room" element={<ControlRoomLayout />}>
         <Route index element={<Navigate to="overview" replace />} />
-        <Route path="overview" element={<Overview />} />
-        <Route path="live-city" element={<LiveCity />} />
+        <Route path="overview"    element={<Overview />} />
+        <Route path="live-city"   element={<LiveCity />} />
         <Route path="predictions" element={<Predictions />} />
-        <Route path="actions" element={<Actions />} />
+        <Route path="actions"     element={<Actions />} />
         <Route path="hospitality" element={<Hospitality />} />
-        <Route path="mobility" element={<Mobility />} />
-        <Route path="welfare" element={<Welfare />} />
-        <Route path="scenarios" element={<Scenarios />} />
-        <Route path="impact" element={<Impact />} />
-        <Route path="glass-box" element={<GlassBox />} />
+        <Route path="mobility"    element={<Mobility />} />
+        <Route path="welfare"     element={<Welfare />} />
+        <Route path="scenarios"   element={<Scenarios />} />
+        <Route path="impact"      element={<Impact />} />
+        <Route path="glass-box"   element={<GlassBox />} />
       </Route>
       <Route path="/visitor" element={<VisitorLayout />}>
-        <Route index element={<Navigate to="plan" replace />} />
-        <Route path="plan" element={<Plan />} />
-        <Route path="route" element={<VisitorRoute />} />
-        <Route path="stay" element={<Stay />} />
+        <Route index element={<VisitorHome />} />
+        <Route path="destination/:destinationId" element={<VisitorDestination />} />
+        <Route path="privacy" element={<VisitorPrivacy />} />
+        <Route path="plan"    element={<Plan />} />
+        <Route path="route"   element={<VisitorRoute />} />
+        <Route path="stay"    element={<Stay />} />
         <Route path="support" element={<Support />} />
       </Route>
     </Routes>

@@ -67,6 +67,12 @@ class ExplainabilityEngine:
             versions={'prediction': 'v1', 'network': 1, 'scenario': 0}
         )
 
+    def _reset_seed_events(self):
+        """Clears the audit log and reinitializes with seed events for demo reset."""
+        self.audit_log.clear()
+        self.explanations_cache.clear()
+        self._init_default_audit_trail()
+
     def record_audit_event(
         self,
         event_type: str,

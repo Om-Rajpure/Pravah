@@ -11,6 +11,8 @@ from routes.predictions import predictions_bp
 from routes.actions import actions_bp
 from routes.scenarios import scenarios_bp
 from routes.explainability import explainability_bp
+from routes.visitor import visitor_bp
+from routes.privacy import privacy_bp
 
 __all__ = [
     'health_bp',
@@ -25,5 +27,7 @@ __all__ = [
     'predictions_bp',
     'actions_bp',
     'scenarios_bp',
-    'explainability_bp'
+    'explainability_bp',
+    'visitor_bp',
+    'privacy_bp',
 ]
