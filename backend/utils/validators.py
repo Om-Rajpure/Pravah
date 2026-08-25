@@ -11,7 +11,8 @@ VALID_PREFERENCES = {'LESS_CROWDED', 'FASTEST', 'AVOID_DISRUPTION', 'LOWER_TRAVE
 VALID_DESTINATIONS = {
     'lalbaugcha-raja', 'gateway-of-india', 'marine-drive',
     'dadar-market', 'siddhivinayak', 'girgaon-chowpatty',
-    'juhu-beach', 'bhuleshwar', 'curry-road-pandal', 'parel-village'
+    'juhu-beach', 'bhuleshwar', 'curry-road-pandal', 'parel-village',
+    'ganesh-galli', 'khetwadi-12'
 }
 
 ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]{1,64}$')

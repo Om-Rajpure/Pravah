@@ -1,6 +1,6 @@
 /**
  * PRAVAAH Visitor API Service
- * Phase 13 — Public-safe visitor recommendation client with Timeout & Interceptors
+ * Phase 11 + Phase 20 — Public-Safe Visitor Guidance Client
  */
 
 import api from '../lib/api'
@@ -23,8 +23,31 @@ export async function getRecommendation(destinationId, preference = 'LESS_CROWDE
   return res.data
 }
 
+export async function getVisitorRoute(origin = 'stn-dadar', destination = 'lalbaugcha-raja', alternative = false) {
+  const res = await api.get('/visitor/route', {
+    params: {
+      from: origin,
+      to: destination,
+      alternative: alternative ? 'true' : 'false',
+    }
+  })
+  return res.data
+}
+
 export async function getCurrentConditions() {
   const res = await api.get('/visitor/conditions')
+  return res.data
+}
+
+export async function getVisitorStay() {
+  const res = await api.get('/visitor/stay')
+  return res.data
+}
+
+export async function getVisitorSupport(type = 'ALL') {
+  const res = await api.get('/visitor/support', {
+    params: type && type !== 'ALL' ? { type } : {}
+  })
   return res.data
 }
 

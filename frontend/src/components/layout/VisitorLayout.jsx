@@ -4,45 +4,64 @@ import { VISITOR_NAV_ITEMS } from '../../lib/constants'
 
 export default function VisitorLayout() {
   const location = useLocation()
-  
+
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-[68px]">
-      <header className="bg-navy h-12 flex items-center justify-between px-4 border-b border-navy-light/30 sticky top-0 z-10 shadow-[0_2px_8px_rgba(11,35,66,0.25)]">
-        <div className="flex items-center gap-2">
-          <img
-            src="/pravaah-logo.png"
-            alt="PRAVAAH"
-            className="h-6 w-auto object-contain"
-            onError={(e) => { e.currentTarget.style.display = 'none' }}
-          />
-          <span className="text-white font-bold text-sm tracking-tight">PRAVAAH</span>
-          <span className="text-[10px] text-white/40 font-medium">Visitor</span>
+    <div className="min-h-screen bg-background flex flex-col pb-[72px] sm:pb-[76px]">
+      {/* Top Header */}
+      <header className="bg-navy h-13 sm:h-14 flex items-center justify-between px-4 sm:px-6 border-b border-navy-light/30 sticky top-0 z-30 shadow-[0_2px_8px_rgba(11,35,66,0.25)]">
+        <div className="flex items-center gap-2.5">
+          <Link to="/visitor" className="flex items-center gap-2">
+            <img
+              src="/pravaah-logo.png"
+              alt="PRAVAAH"
+              className="h-7 w-auto object-contain"
+              onError={(e) => { e.currentTarget.style.display = 'none' }}
+            />
+            <span className="text-white font-bold text-[15px] sm:text-base tracking-tight">PRAVAAH</span>
+            <span className="text-[10px] text-white/50 font-semibold uppercase tracking-wider bg-white/10 px-1.5 py-0.5 rounded ml-1">
+              Visitor Guide
+            </span>
+          </Link>
         </div>
-        <Link to="/control-room/overview" className="text-[11px] text-white/60 font-medium hover:text-white transition-colors flex items-center gap-1">
-          <Icons.LayoutDashboard className="w-3 h-3" />
-          Control Room
-        </Link>
+
+        {/* Right Nav */}
+        <div className="flex items-center gap-3">
+          <Link
+            to="/control-room/overview"
+            className="text-[12px] text-white/70 font-semibold hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded transition-all flex items-center gap-1.5 shadow-sm"
+          >
+            <Icons.LayoutDashboard className="w-3.5 h-3.5 text-orange" />
+            <span className="hidden sm:inline">Operator</span> Control Room
+          </Link>
+        </div>
       </header>
-      
-      <main className="flex-1 flex justify-center p-4">
-        <div className="w-full max-w-[480px]">
+
+      {/* Main Content Workspace */}
+      <main className="flex-1 flex justify-center p-3 sm:p-5 lg:p-6">
+        <div className="w-full max-w-2xl lg:max-w-4xl animate-in fade-in duration-200">
           <Outlet />
         </div>
       </main>
-      
-      <nav className="fixed bottom-0 w-full bg-surface border-t border-border flex justify-center">
-        <div className="w-full max-w-[480px] flex justify-around items-center h-14">
+
+      {/* Fixed Bottom Navigation (Mobile & Desktop App Bar) */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-surface border-t border-border flex justify-center z-30 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <div className="w-full max-w-2xl flex justify-around items-center h-14 sm:h-15 px-2">
           {VISITOR_NAV_ITEMS.map(item => {
-            const Icon = Icons[item.icon]
-            const isActive = location.pathname.startsWith(item.path)
+            const Icon = Icons[item.icon] || Icons.Circle
+            const isExactHome = item.path === '/visitor' && (location.pathname === '/visitor' || location.pathname === '/visitor/')
+            const isActive = isExactHome || (item.path !== '/visitor' && location.pathname.startsWith(item.path))
             return (
-              <Link 
-                key={item.id} 
-                to={item.path} 
-                className={`flex flex-col items-center justify-center w-full h-full space-y-0.5 transition-colors ${isActive ? 'text-navy' : 'text-text-muted hover:text-text-primary'}`}
+              <Link
+                key={item.id}
+                to={item.path}
+                className={`flex flex-col items-center justify-center flex-1 h-full py-1 space-y-0.5 transition-colors touch-target ${
+                  isActive ? 'text-navy font-bold' : 'text-text-muted hover:text-text-primary'
+                }`}
               >
-                {Icon && <Icon className="w-[18px] h-[18px]" strokeWidth={isActive ? 2 : 1.5} />}
-                <span className="text-[10px] font-medium">{item.label}</span>
+                <div className={`p-1 rounded-md transition-colors ${isActive ? 'bg-navy-soft text-navy' : ''}`}>
+                  <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" strokeWidth={isActive ? 2.25 : 1.75} />
+                </div>
+                <span className="text-[10px] sm:text-[11px] leading-tight">{item.label}</span>
               </Link>
             )
           })}

@@ -128,6 +128,50 @@ class TestPrivacyLayer(unittest.TestCase):
         self.assertEqual(r1['destination_id'], r2['destination_id'])
         self.assertEqual(r1['crowd_level'],    r2['crowd_level'])
 
+    def test_09_visitor_route_endpoint(self):
+        """GET /api/visitor/route must return valid connected path and no PII."""
+        res = self.client.get('/api/visitor/route?from=stn-dadar&to=lalbaugcha-raja')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self._assert_no_pii(data)
+        self.assertEqual(data['status'], 'AVAILABLE')
+        self.assertIn('total_travel_time_min', data)
+        self.assertIn('total_distance_km', data)
+        self.assertIn('steps', data)
+        self.assertGreater(len(data['steps']), 0)
+        self.assertIn('geometry', data)
+        self.assertEqual(data['geometry']['type'], 'LineString')
+
+    def test_10_visitor_stay_endpoint(self):
+        """GET /api/visitor/stay must return accommodation guidance without PII."""
+        res = self.client.get('/api/visitor/stay')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self._assert_no_pii(data)
+        self.assertIn('summary', data)
+        self.assertIn('zones', data)
+        self.assertIn('recommendation', data)
+
+    def test_11_visitor_support_endpoint(self):
+        """GET /api/visitor/support must return welfare amenities without PII."""
+        res = self.client.get('/api/visitor/support')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self._assert_no_pii(data)
+        self.assertIn('amenities', data)
+        self.assertGreater(len(data['amenities']), 0)
+
+    def test_12_destinations_trend_and_category(self):
+        """Destinations list must include trend, category, and area."""
+        res = self.client.get('/api/visitor/destinations')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        for d in data:
+            self.assertIn('trend', d)
+            self.assertIn(d['trend'], ('INCREASING', 'STABLE', 'EASING'))
+            self.assertIn('category', d)
+            self.assertIn('area', d)
+
 
 if __name__ == '__main__':
     unittest.main()
