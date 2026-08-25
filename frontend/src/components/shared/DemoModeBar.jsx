@@ -80,13 +80,13 @@ export function DemoModeBar({ onReset }) {
 
   return (
     <>
-      <div className="bg-graphite text-white rounded-card border border-border/30 px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-3 shadow-subtle">
+      <div className="bg-graphite text-white rounded-card border border-navy-light/20 px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-3 shadow-elevated">
         {/* Identity */}
         <div className="flex items-center gap-2 min-w-fit">
-          <Clapperboard className="w-4 h-4 text-terracotta flex-shrink-0" />
+          <Clapperboard className="w-4 h-4 text-orange flex-shrink-0" />
           <div>
-            <span className="text-[10px] uppercase tracking-widest font-bold text-white/60 block leading-none">Demo Mode</span>
-            <span className="text-[11px] font-bold text-white leading-none">SIMULATION</span>
+            <span className="text-[10px] uppercase tracking-widest font-bold text-white/50 block leading-none">Demo Mode</span>
+            <span className="text-[12px] font-bold text-white leading-none">SIMULATION</span>
           </div>
         </div>
 
@@ -113,13 +113,13 @@ export function DemoModeBar({ onReset }) {
 
         {/* Sim time */}
         {demo?.simulation_time && (
-          <span className="text-[11px] font-mono text-white/60 hidden md:inline">{demo.simulation_time}</span>
+          <span className="text-[11px] font-mono text-white/55 hidden md:inline">{demo.simulation_time}</span>
         )}
 
         {/* Guided Judge Tour Button */}
         <button
           onClick={() => setTourOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-1 bg-terracotta hover:bg-terracotta-dark text-white rounded text-xs font-bold transition-colors shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1 bg-orange hover:bg-orange-dark text-white rounded text-xs font-bold transition-colors shadow-sm"
           title="Open interactive Judge Tour"
         >
           <Compass className="w-3.5 h-3.5" />
@@ -161,15 +161,15 @@ export function DemoModeBar({ onReset }) {
             onClick={handleReset}
             disabled={loading}
             title="Reset demo to baseline"
-            className="w-7 h-7 rounded flex items-center justify-center bg-terracotta/30 hover:bg-terracotta/50 transition-colors disabled:opacity-40"
+            className="w-7 h-7 rounded flex items-center justify-center bg-orange/20 hover:bg-orange/40 transition-colors disabled:opacity-40"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-terracotta-light" />
+            <RotateCcw className="w-3.5 h-3.5 text-orange-light" />
           </button>
         </div>
 
-        {/* Event description tooltip */}
+        {/* Event description */}
         {event?.description && (
-          <p className="w-full text-[10px] text-white/50 pt-0.5 leading-snug hidden sm:block">
+          <p className="w-full text-[10px] text-white/45 pt-0.5 leading-snug hidden sm:block">
             {event.description}
           </p>
         )}

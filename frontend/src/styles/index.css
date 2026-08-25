@@ -5,29 +5,47 @@
 @tailwind utilities;
 
 :root {
-  --background: #F5F2EC;
+  /* Surfaces */
+  --background: #F5F3EE;
   --surface: #FBFAF7;
   --surface-muted: #ECE8E0;
   --border: #DDD8CF;
-  --text-primary: #292827;
-  --text-secondary: #6B6761;
-  --text-muted: #918C84;
-  --brand-terracotta: #B85C3E;
-  --brand-terracotta-dark: #91452F;
-  --brand-terracotta-light: #E8C9BC;
-  --brand-terracotta-soft: #F4E7E1;
-  --critical: #A94338;
+
+  /* Typography — high contrast */
+  --text-primary: #17212B;
+  --text-secondary: #4D5963;
+  --text-muted: #7A8591;
+
+  /* Brand — Primary Navy */
+  --navy: #12315B;
+  --navy-dark: #0B2342;
+  --navy-light: #1A4070;
+
+  /* Brand — Blue */
+  --brand-blue: #2468B8;
+  --brand-blue-dark: #1A50A0;
+
+  /* Brand — Teal */
+  --teal: #2D9C8F;
+  --teal-dark: #237A6F;
+
+  /* Brand — Warm Orange (primary accent) */
+  --orange: #E69A2E;
+  --orange-dark: #C87524;
+
+  /* Status */
+  --critical: #B03A2E;
   --warning: #B8893D;
-  --high: #B85C3E;
-  --low: #52755F;
-  --infrastructure-slate: #536873;
-  --sidebar-bg: #292827;
+  --low: #2D9C8F;
+
+  /* Sidebar */
+  --sidebar-bg: #0B2342;
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: var(--surface-muted);
@@ -40,7 +58,7 @@
   background: var(--text-muted);
 }
 
-/* MapLibre Canvas and Popup customizations */
+/* MapLibre Canvas */
 .maplibregl-canvas {
   outline: none;
 }
@@ -52,30 +70,23 @@
   border-radius: 8px !important;
 }
 
-.maplibregl-popup-anchor-top .maplibregl-popup-tip {
-  border-bottom-color: #FBFAF7 !important;
-}
-.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
-  border-top-color: #FBFAF7 !important;
-}
-.maplibregl-popup-anchor-left .maplibregl-popup-tip {
-  border-right-color: #FBFAF7 !important;
-}
-.maplibregl-popup-anchor-right .maplibregl-popup-tip {
-  border-left-color: #FBFAF7 !important;
+.maplibregl-popup-anchor-top    .maplibregl-popup-tip { border-bottom-color: #FBFAF7 !important; }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color:    #FBFAF7 !important; }
+.maplibregl-popup-anchor-left   .maplibregl-popup-tip { border-right-color:  #FBFAF7 !important; }
+.maplibregl-popup-anchor-right  .maplibregl-popup-tip { border-left-color:   #FBFAF7 !important; }
+
+/* MapLibre Attribution — style to match brand */
+.maplibregl-ctrl-attrib {
+  font-size: 10px !important;
+  opacity: 0.7;
 }
 
-/* Touch Friendly Targets */
+/* Touch targets */
 .touch-target {
   min-width: 44px;
   min-height: 44px;
 }
 
 /* Hide scrollbar for horizontal scrollers */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

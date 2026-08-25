@@ -1,17 +1,13 @@
 /**
  * PRAVAAH Map Service
- * Developer Note:
- * - MapLibre GL JS is the primary mapping engine.
- * - OpenFreeMap is the open-source tile provider (no paid API keys required).
- * - Map configuration and Mumbai defaults are centralized in src/config/map.js.
- * - Geographic intelligence layers (Pressure, Transport, Hospitality, etc.) will be added modularly in subsequent steps.
+ * MapLibre GL JS + reliable tile providers (Carto Positron primary, OpenFreeMap fallback).
  */
 
 import * as maplibregl from 'maplibre-gl'
 import { MAP_CONFIG, DEFAULT_CENTER, DEFAULT_ZOOM } from '../config/map'
 
 /**
- * Creates and initializes a MapLibre GL map instance
+ * Creates and initializes a MapLibre GL map instance.
  * @param {HTMLElement} container - DOM container element
  * @param {Object} customOptions - Overrides for MAP_CONFIG
  * @returns {maplibregl.Map} map instance
@@ -25,10 +21,12 @@ export function createMapInstance(container, customOptions = {}) {
 
   const map = new maplibregl.Map(options)
 
-  // Add compact attribution control at bottom-right
+  // Compact attribution at bottom-right
   const attribution = new maplibregl.AttributionControl({
     compact: true,
-    customAttribution: '© <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+    customAttribution:
+      '© <a href="https://carto.com/" target="_blank" rel="noopener">CARTO</a> ' +
+      '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
   })
   map.addControl(attribution, 'bottom-right')
 
@@ -36,8 +34,8 @@ export function createMapInstance(container, customOptions = {}) {
 }
 
 /**
- * Resets map camera to default Mumbai operational overview
- * @param {maplibregl.Map} map - Map instance
+ * Resets the map camera to the default Mumbai operational view.
+ * @param {maplibregl.Map} map
  */
 export function resetMapCamera(map) {
   if (!map) return
@@ -50,8 +48,8 @@ export function resetMapCamera(map) {
 }
 
 /**
- * Safely triggers resize calculation
- * @param {maplibregl.Map} map - Map instance
+ * Safely triggers MapLibre's resize calculation.
+ * @param {maplibregl.Map} map
  */
 export function resizeMap(map) {
   if (map && typeof map.resize === 'function') {

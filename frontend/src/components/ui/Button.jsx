@@ -1,7 +1,8 @@
 export function Button({ children, variant = 'primary', size = 'md', className = '', ...props }) {
-  const base = 'inline-flex items-center justify-center font-medium rounded-card-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-orange/20 focus:ring-offset-1'
+  const base = 'inline-flex items-center justify-center font-semibold rounded-card-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-navy/20 focus:ring-offset-1'
   const variants = {
-    primary: 'bg-brand-orange text-white hover:bg-brand-orange-dark active:bg-brand-orange-dark shadow-subtle',
+    primary: 'bg-navy text-white hover:bg-navy-dark active:bg-navy-dark shadow-subtle',
+    accent:  'bg-orange text-white hover:bg-orange-dark active:bg-orange-dark shadow-subtle',
     secondary: 'bg-surface text-text-primary border border-border-strong hover:bg-surface-muted active:bg-surface-muted',
     ghost: 'text-text-secondary hover:bg-surface-muted hover:text-text-primary',
   }

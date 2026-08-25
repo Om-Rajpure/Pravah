@@ -7,12 +7,19 @@ export default function VisitorLayout() {
   
   return (
     <div className="min-h-screen bg-background flex flex-col pb-[68px]">
-      <header className="bg-surface h-12 flex items-center justify-between px-4 border-b border-border sticky top-0 z-10">
-        <div className="flex items-center">
-          <span className="text-text-primary font-bold text-base tracking-tight">PRAVAAH</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-brand-orange ml-1 mt-0.5"></span>
+      <header className="bg-navy h-12 flex items-center justify-between px-4 border-b border-navy-light/30 sticky top-0 z-10 shadow-[0_2px_8px_rgba(11,35,66,0.25)]">
+        <div className="flex items-center gap-2">
+          <img
+            src="/pravaah-logo.png"
+            alt="PRAVAAH"
+            className="h-6 w-auto object-contain"
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+          />
+          <span className="text-white font-bold text-sm tracking-tight">PRAVAAH</span>
+          <span className="text-[10px] text-white/40 font-medium">Visitor</span>
         </div>
-        <Link to="/control-room/overview" className="text-[12px] text-text-secondary font-medium hover:text-text-primary transition-colors">
+        <Link to="/control-room/overview" className="text-[11px] text-white/60 font-medium hover:text-white transition-colors flex items-center gap-1">
+          <Icons.LayoutDashboard className="w-3 h-3" />
           Control Room
         </Link>
       </header>
@@ -32,7 +39,7 @@ export default function VisitorLayout() {
               <Link 
                 key={item.id} 
                 to={item.path} 
-                className={`flex flex-col items-center justify-center w-full h-full space-y-0.5 transition-colors ${isActive ? 'text-brand-orange-dark' : 'text-text-muted hover:text-text-primary'}`}
+                className={`flex flex-col items-center justify-center w-full h-full space-y-0.5 transition-colors ${isActive ? 'text-navy' : 'text-text-muted hover:text-text-primary'}`}
               >
                 {Icon && <Icon className="w-[18px] h-[18px]" strokeWidth={isActive ? 2 : 1.5} />}
                 <span className="text-[10px] font-medium">{item.label}</span>
