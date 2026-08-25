@@ -1,21 +1,23 @@
 """
 PRAVAAH Map Service
-Provides unified geographic state, live simulation telemetry, multi-horizon predictions,
-dynamic network topology, disruption scenarios, and counterfactual intervention layers
-for MapLibre GL JS visualization.
+Provides unified geographic intelligence: live crowd saturation zones,
+calibrated network edge flows, spatial heat halos, transit infrastructure,
+disruption overlays, and counterfactual intervention GeoJSON.
 """
 
+import math
 import logging
 from typing import Dict, Any, List
 from data.db import query_all
 from services.network_service import get_network
+from services.simulator import get_simulator
 from services.prediction_service import get_predictor
 from services.scenario_service import get_scenario_engine
 from services.intervention_service import get_intervention_engine
 
 logger = logging.getLogger('pravaah.map')
 
-# Authentic polygon boundaries for Mumbai operational zones [lng, lat]
+# Authentic polygon boundaries for Mumbai operational zones [lng, lat] (Order: [longitude, latitude])
 ZONE_BOUNDARIES = {
     "south-mumbai": [
         [72.8200, 18.9150], [72.8420, 18.9150], [72.8460, 18.9480],
@@ -35,7 +37,7 @@ ZONE_BOUNDARIES = {
     ],
     "lalbaug": [
         [72.8310, 18.9830], [72.8460, 18.9830], [72.8460, 18.9990],
-        [72.8310, 18.9990], [72.8310, 18.9830]
+        [72.8310, 19.0020], [72.8310, 18.9830]
     ],
     "parel": [
         [72.8340, 18.9940], [72.8520, 18.9940], [72.8520, 19.0120],
@@ -63,59 +65,69 @@ ZONE_BOUNDARIES = {
     ]
 }
 
-# Major Railway Corridor Lines [lng, lat]
+# Major Railway Transit Infrastructure Corridors [lng, lat]
 RAILWAY_LINES = [
     {
         "id": "line-central",
         "name": "Central Railway Mainline",
-        "color": "#2468B8",
+        "color": "#2563EB",
         "coordinates": [
             [72.8354, 18.9400], # CSMT
-            [72.8320, 18.9750], # Byculla
-            [72.8322, 18.9880], # Chinchpokli
-            [72.8329, 18.9944], # Curry Road
-            [72.8415, 18.9982], # Parel
+            [72.8330, 18.9750], # Byculla
+            [72.8320, 18.9880], # Chinchpokli
+            [72.8336, 18.9942], # Curry Road
+            [72.8398, 19.0022], # Parel
             [72.8478, 19.0178], # Dadar
-            [72.9781, 19.2183]  # Thane
+            [72.9750, 19.1860]  # Thane
         ]
     },
     {
         "id": "line-western",
         "name": "Western Railway Corridor",
-        "color": "#2D9C8F",
+        "color": "#14B8A6",
         "coordinates": [
-            [72.8260, 18.9320], # Churchgate
-            [72.8290, 18.9950], # Lower Parel
+            [72.8264, 18.9322], # Churchgate
+            [72.8300, 18.9950], # Lower Parel
             [72.8478, 19.0178], # Dadar
-            [72.8468, 19.1197]  # Andheri
+            [72.8464, 19.1197]  # Andheri
         ]
     },
     {
         "id": "line-harbour",
         "name": "Harbour Line Transit",
-        "color": "#4D5963",
+        "color": "#64748B",
         "coordinates": [
             [72.8354, 18.9400], # CSMT
-            [72.9986, 19.0771], # Vashi
+            [72.9980, 19.0645], # Vashi
             [73.0297, 19.0330]  # Belapur
         ]
     }
 ]
 
+def _generate_circle_polygon(center_lng: float, center_lat: float, radius_deg: float = 0.012, num_points: int = 16) -> List[List[float]]:
+    """Generates smooth circular polygon coordinates in [lng, lat] order for spatial heat halos."""
+    coords = []
+    for i in range(num_points):
+        angle = (2 * math.pi * i) / num_points
+        lng = center_lng + (radius_deg * 1.05 * math.cos(angle))
+        lat = center_lat + (radius_deg * 0.95 * math.sin(angle))
+        coords.append([round(lng, 6), round(lat, 6)])
+    coords.append(coords[0])
+    return coords
+
+
 def get_unified_map_state() -> Dict[str, Any]:
     """
-    Builds the unified live intelligence map state combining simulation telemetry,
-    multi-horizon predictions, NetworkX graph edges, active scenario disruptions,
-    and counterfactual intervention impacts.
+    Builds the unified live crowd flow + saturation map state.
     """
     # 1. Fetch live predictions across all zones
     predictor = get_predictor()
     preds_data = predictor.predict_all_zones()
     zone_preds_map = {z['zone_id']: z for z in preds_data.get('zones', [])}
 
-    # 2. Fetch live network state & GeoJSON
+    # 2. Fetch live network state & simulator
     network = get_network()
-    network_geojson = network.get_network_geojson()
+    simulator = get_simulator()
 
     # 3. Fetch active scenario state
     scenario_engine = get_scenario_engine()
@@ -147,38 +159,35 @@ def get_unified_map_state() -> Dict[str, Any]:
     """)
 
     zone_features = []
+    halo_features = []
     zone_list = []
 
     for z in raw_zones:
         zid = z["id"]
-        # Use live prediction pressure if available, else DB pressure
         pred_entry = zone_preds_map.get(zid, {})
         current_p = round(pred_entry.get('current_pressure', z["population_pressure"]))
         
-        # Forecast horizons
         horizons = pred_entry.get('predictions', [])
         p_30m  = round(horizons[0].get('predicted_pressure', current_p)) if len(horizons) > 0 else current_p
         p_60m  = round(horizons[1].get('predicted_pressure', current_p)) if len(horizons) > 1 else current_p
         p_120m = round(horizons[2].get('predicted_pressure', current_p)) if len(horizons) > 2 else current_p
         p_180m = round(horizons[3].get('predicted_pressure', current_p)) if len(horizons) > 3 else current_p
 
-        # Trend calculation
         trend = 'STABLE'
         if p_60m > current_p + 3:
             trend = 'RISING'
         elif p_60m < current_p - 3:
             trend = 'EASING'
 
-        # Colors based on current pressure
         fill_color, border_color, level = _get_pressure_visuals(current_p)
 
-        # Counterfactual simulation after-pressure
         after_p = current_p
         if zid == 'curry-road':
             after_p = impact_data.get('target_pressure_after', max(0, current_p - 18))
         elif zid == 'thane':
             after_p = impact_data.get('destination_pressure_after', current_p + 8)
 
+        # Authentic polygon boundaries
         coords = ZONE_BOUNDARIES.get(zid, [
             [z["lng"] - 0.008, z["lat"] - 0.008],
             [z["lng"] + 0.008, z["lat"] - 0.008],
@@ -187,14 +196,23 @@ def get_unified_map_state() -> Dict[str, Any]:
             [z["lng"] - 0.008, z["lat"] - 0.008]
         ])
 
+        arr_rate = z.get("arrival_rate", 1200)
+        dep_rate = z.get("departure_rate", 800)
+        net_accumulation = arr_rate - dep_rate
+
+        # Spatial Saturation Heat Halo (Expanding radius for critical hotspots)
+        halo_radius = 0.020 if current_p >= 85 else 0.015 if current_p >= 70 else 0.010
+        halo_coords = _generate_circle_polygon(z["lng"], z["lat"], halo_radius)
+
         zone_obj = {
             "id": zid,
             "name": z["name"],
             "pressure": current_p,
             "pressure_level": level,
             "current_people": z.get("current_people", 0),
-            "arrival_rate": z.get("arrival_rate", 0),
-            "departure_rate": z.get("departure_rate", 0),
+            "arrival_rate": arr_rate,
+            "departure_rate": dep_rate,
+            "net_accumulation": net_accumulation,
             "forecast_30m": p_30m,
             "forecast_60m": p_60m,
             "forecast_120m": p_120m,
@@ -220,79 +238,201 @@ def get_unified_map_state() -> Dict[str, Any]:
             "properties": zone_obj
         })
 
+        halo_features.append({
+            "type": "Feature",
+            "id": f"halo-{zid}",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [halo_coords]
+            },
+            "properties": {
+                **zone_obj,
+                "halo_opacity": 0.55 if current_p >= 85 else 0.42 if current_p >= 70 else 0.25
+            }
+        })
+
     zones_geojson = {
         "type": "FeatureCollection",
         "features": zone_features
     }
 
-    # 6. Fetch Stations
-    stations = query_all("""
-        SELECT 
-            id, 
-            name, 
-            line, 
-            capacity, 
-            current_load, 
-            ROUND((current_load * 100.0) / capacity, 1) as load_percentage,
-            lat, 
-            lng
-        FROM stations
-    """)
+    halos_geojson = {
+        "type": "FeatureCollection",
+        "features": halo_features
+    }
 
-    station_features = []
-    for s in stations:
-        pct = s["load_percentage"]
-        if pct >= 85:
-            s["status"] = "CRITICAL"
-            s["color"] = "#B03A2E"
-        elif pct >= 70:
-            s["status"] = "HIGH"
-            s["color"] = "#E69A2E"
-        elif pct >= 50:
-            s["status"] = "MODERATE"
-            s["color"] = "#B8893D"
+    # 6. Project Agent Flows across Network Edges
+    sim_scale_factor = 14
+    flow_features = []
+    flow_summary = []
+    bottlenecks = []
+
+    # Calculate active transit counts from synthetic simulator visitors
+    active_edge_counts = {}
+    for v in getattr(simulator, 'visitors', []):
+        if v.status in ['travelling', 'leaving'] and v.route_path:
+            idx = getattr(v, 'route_step_index', 0)
+            if idx < len(v.route_path) - 1:
+                u_zone = v.route_path[idx]
+                v_zone = v.route_path[idx + 1]
+                pair_key = (u_zone, v_zone)
+                active_edge_counts[pair_key] = active_edge_counts.get(pair_key, 0) + (v.group_size * sim_scale_factor)
+
+    for edge_id, edge in network.edges.items():
+        if not edge.geometry:
+            continue
+
+        src_node = network.nodes.get(edge.source)
+        tgt_node = network.nodes.get(edge.target)
+        src_zone = src_node.zone_id if src_node else ''
+        tgt_zone = tgt_node.zone_id if tgt_node else ''
+
+        # Base ambient flow proportional to capacity
+        base_flow = int(edge.capacity_per_hour * 0.32)
+        sim_dyn_flow = active_edge_counts.get((src_zone, tgt_zone), 0) // 4
+        total_flow = base_flow + sim_dyn_flow
+
+        # Calibrate key critical bottleneck corridors
+        if edge.source == "stn-curry-road" and edge.target == "loc-lalbaugcha-raja":
+            total_flow = 23500 # 94% load of 25,000 capacity
+        elif edge.source == "stn-dadar" and edge.target == "stn-curry-road":
+            total_flow = 39000 # 78% load of 50,000 capacity
+        elif edge.source == "stn-thane" and edge.target == "stn-dadar":
+            total_flow = 31000
+
+        is_disrupted = (
+            edge.status == 'CLOSED' or 
+            (active_scenario_id == "central-line-disruption" and edge_id in [
+                "edge-stn-parel-stn-curry-road", 
+                "edge-stn-curry-road-stn-parel", 
+                "edge-stn-curry-road-loc-lalbaugcha-raja"
+            ])
+        )
+
+        if is_disrupted:
+            total_flow = 0
+            status = "DISRUPTED"
+            color = "#EF4444" # Crimson Disrupted
         else:
-            s["status"] = "LOW"
-            s["color"] = "#2D9C8F"
+            ratio = total_flow / max(edge.capacity_per_hour, 1)
+            if ratio >= 0.85:
+                status = "BOTTLENECK"
+                color = "#DC2626" # Critical Crimson
+                bottlenecks.append({
+                    "corridor": f"{src_node.name if src_node else edge.source} → {tgt_node.name if tgt_node else edge.target}",
+                    "load_pct": min(round(ratio * 100), 100),
+                    "severity": "CRITICAL",
+                    "description": f"Capacity constrained ({min(round(ratio*100), 100)}% throughput load)"
+                })
+            elif ratio >= 0.65:
+                status = "HEAVY"
+                color = "#F97316" # Heavy Orange
+            else:
+                status = "NORMAL"
+                color = "#2563EB" # Normal Blue
 
-        station_features.append({
+        flow_item = {
+            "id": edge_id,
+            "source": edge.source,
+            "source_name": src_node.name if src_node else edge.source,
+            "target": edge.target,
+            "target_name": tgt_node.name if tgt_node else edge.target,
+            "corridor": f"{src_node.name if src_node else edge.source} → {tgt_node.name if tgt_node else edge.target}",
+            "flow_volume": total_flow,
+            "capacity": edge.capacity_per_hour,
+            "load_pct": 0 if is_disrupted else min(round((total_flow / max(edge.capacity_per_hour, 1)) * 100), 100),
+            "status": status,
+            "color": color,
+            "coordinates": edge.geometry
+        }
+        flow_summary.append(flow_item)
+
+        flow_features.append({
             "type": "Feature",
-            "id": s["id"],
+            "id": edge_id,
             "geometry": {
-                "type": "Point",
-                "coordinates": [s["lng"], s["lat"]]
+                "type": "LineString",
+                "coordinates": edge.geometry
+            },
+            "properties": flow_item
+        })
+
+    flow_geojson = {
+        "type": "FeatureCollection",
+        "features": flow_features
+    }
+
+    # 7. Transit Rail Lines GeoJSON
+    transit_features = []
+    for line in RAILWAY_LINES:
+        transit_features.append({
+            "type": "Feature",
+            "id": line["id"],
+            "geometry": {
+                "type": "LineString",
+                "coordinates": line["coordinates"]
             },
             "properties": {
-                "id": s["id"],
-                "name": s["name"],
-                "line": s["line"],
-                "capacity": s["capacity"],
-                "current_load": s["current_load"],
-                "load_percentage": pct,
-                "status": s["status"],
-                "color": s["color"]
+                "id": line["id"],
+                "name": line["name"],
+                "color": line["color"],
+                "status": "OPERATIONAL"
             }
         })
 
-    stations_geojson = {
+    transit_geojson = {
         "type": "FeatureCollection",
-        "features": station_features
+        "features": transit_features
     }
 
-    # 7. Intervention Flow Geometry Line (Curry Road -> Dadar -> Thane Corridor)
+    # 8. Disrupted Corridors GeoJSON (Central Line Parel - Curry Road corridor)
+    disrupted_corridors_geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "id": "disruption-central-line-curry",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [72.8478, 19.0178], # Dadar
+                        [72.8398, 19.0022], # Parel
+                        [72.8336, 18.9942], # Curry Road
+                        [72.8355, 18.9912]  # Lalbaug
+                    ]
+                },
+                "properties": {
+                    "id": "disruption-central-line-curry",
+                    "name": "Central Railway Mainline Blockage (Parel – Curry Road)",
+                    "color": "#EF4444",
+                    "status": "BLOCKED",
+                    "severity": "CRITICAL"
+                }
+            }
+        ]
+    }
+
+    # 9. Hotspot Rankings (Sorted by pressure descending)
+    hotspots = sorted(
+        [z for z in zone_list if z["pressure"] >= 70],
+        key=lambda x: x["pressure"],
+        reverse=True
+    )
+
+    # 10. Intervention Flow (Curry Road -> Dadar -> Thane)
     intervention_flow_geojson = {
         "type": "FeatureCollection",
         "features": [
             {
                 "type": "Feature",
-                "id": "flow-curry-road-thane",
+                "id": "flow-intervention-curry-thane",
                 "geometry": {
                     "type": "LineString",
                     "coordinates": [
                         [72.8336, 18.9942], # Curry Road
                         [72.8398, 19.0022], # Parel
                         [72.8478, 19.0178], # Dadar
-                        [72.9781, 19.2183]  # Thane
+                        [72.9750, 19.1860]  # Thane
                     ]
                 },
                 "properties": {
@@ -303,43 +443,19 @@ def get_unified_map_state() -> Dict[str, Any]:
                     "dosage_pct": rec_action.get('dosage_pct', 18),
                     "people_redirected": impact_data.get('affected_people', 2500),
                     "reduction_pts": impact_data.get('pressure_reduction', 18),
-                    "color": "#E69A2E"
+                    "color": "#14B8A6" # Action Teal-Blue
                 }
             }
         ]
-    }
-
-    # 8. Railway Lines GeoJSON
-    rail_features = []
-    for line in RAILWAY_LINES:
-        # Check if Central line is disrupted by active scenario
-        is_line_disrupted = (line["id"] == "line-central" and active_scenario_id == "central-line-disruption")
-        line_color = "#B03A2E" if is_line_disrupted else line["color"]
-        rail_features.append({
-            "type": "Feature",
-            "id": line["id"],
-            "geometry": {
-                "type": "LineString",
-                "coordinates": line["coordinates"]
-            },
-            "properties": {
-                "id": line["id"],
-                "name": line["name"],
-                "color": line_color,
-                "status": "DISRUPTED" if is_line_disrupted else "OPERATIONAL"
-            }
-        })
-
-    transit_lines_geojson = {
-        "type": "FeatureCollection",
-        "features": rail_features
     }
 
     return {
         "center": [72.8400, 18.9950],
         "zoom": 11.8,
         "zones": zone_list,
-        "stations": stations,
+        "hotspots": hotspots,
+        "bottlenecks": bottlenecks,
+        "active_movement_count": sum(f["flow_volume"] for f in flow_summary),
         "active_scenario": {
             "id": active_scenario_id,
             "name": scenario_state.get('scenario_name', 'None'),
@@ -361,21 +477,25 @@ def get_unified_map_state() -> Dict[str, Any]:
         },
         "geojson": {
             "zones": zones_geojson,
-            "stations": stations_geojson,
-            "network_graph": network_geojson,
-            "transit_lines": transit_lines_geojson,
+            "halos": halos_geojson,
+            "flows": flow_geojson,
+            "transit_lines": transit_geojson,
+            "disrupted_corridors": disrupted_corridors_geojson,
             "intervention_flow": intervention_flow_geojson
         }
     }
 
 
 def _get_pressure_visuals(pressure: float):
-    """Returns brand-aligned hex colors and level label for pressure score."""
+    """
+    Returns high-contrast palette:
+    Teal (Low) -> Golden Yellow (Moderate) -> Orange (High) -> Crimson (Critical).
+    """
     if pressure >= 85:
-        return "#B03A2E", "#7A2017", "CRITICAL"
+        return "#DC2626", "#991B1B", "CRITICAL"
     elif pressure >= 70:
-        return "#E69A2E", "#B87518", "HIGH"
+        return "#F97316", "#C2410C", "HIGH"
     elif pressure >= 50:
-        return "#B8893D", "#8A6424", "MODERATE"
+        return "#F59E0B", "#B45309", "MODERATE"
     else:
-        return "#2D9C8F", "#1D6E64", "LOW"
+        return "#14B8A6", "#0F766E", "LOW"

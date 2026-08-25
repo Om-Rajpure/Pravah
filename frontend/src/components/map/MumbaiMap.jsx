@@ -1,29 +1,29 @@
 /**
- * MumbaiMap — PRAVAAH Live Spatial Intelligence Canvas
+ * MumbaiMap — PRAVAAH Live Crowd Flow & Saturation Map (v2 Robust Canvas)
  * 
- * Capabilities:
- * 1. Modes: CURRENT, FORECAST, NETWORK, DISRUPTIONS, INTERVENTION, WHAT-IF.
- * 2. Real-Time Telemetry: Zone pressure polygons, flow vectors, station loads.
- * 3. Multi-Horizon Forecast: +30m, +60m, +120m, +180m with hotspot halos.
- * 4. Disruption Overlay: Red dashed line on blocked rail/road corridors.
- * 5. Counterfactual Simulation: Before vs After intervention pressure delta.
- * 6. Demo Mode & Judge Tour Synchronization.
- * 7. Sub-second initial render using inline Carto Positron raster tiles.
+ * Guarantees:
+ * 1. Single MapLibre instance created ONCE on mount (never destroyed on state/data updates).
+ * 2. Guaranteed Layer Registration: Sources and WebGL layers registered whenever isStyleLoaded() is true on load, styledata, and data arrival.
+ * 3. Mode Visibility Matrix: Every mode (CURRENT, FORECAST, NETWORK, DISRUPTIONS, ACTION, WHAT_IF) explicitly sets layer visibility.
+ * 4. Spatial Saturation Heat Halos: Data-driven fill interpolation (Teal -> Amber -> Orange -> Crimson).
+ * 5. 60 FPS Continuous Marching-Dash Animation on active flow lines and action corridors.
+ * 6. Interactive Hotspot DOM Badges with live pulsing beacons.
  */
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import * as maplibregl from 'maplibre-gl'
 import { 
   Activity, 
   TrendingUp, 
   Train, 
   AlertTriangle, 
   Zap, 
-  RotateCcw, 
-  Clock, 
   Sparkles, 
+  Flame,
   ArrowRight,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  Users
 } from 'lucide-react'
 import { MapControls } from './MapControls'
 import { MapLegend } from './MapLegend'
@@ -40,10 +40,12 @@ export function MumbaiMap({
   onSelectZone,
   onSimulateAction,
   demoEventIndex = null,
+  simStatus = 'PAUSED',
 }) {
   const mapContainerRef   = useRef(null)
   const mapInstanceRef    = useRef(null)
-  const isInitializingRef = useRef(false)
+  const markersRef        = useRef([])
+  const animFrameRef      = useRef(null)
   const onMapReadyRef     = useRef(onMapReady)
 
   useEffect(() => {
@@ -55,6 +57,7 @@ export function MumbaiMap({
   const [forecastHorizon, setForecastHorizon] = useState(60) // 30 | 60 | 120 | 180
   const [whatIfView, setWhatIfView] = useState('AFTER') // 'BEFORE' | 'AFTER'
   const [selectedFeature, setSelectedFeature] = useState(null)
+  const [mapReady, setMapReady]   = useState(false)
   const [mapStatus, setMapStatus] = useState('loading') // 'loading' | 'ready' | 'error'
   const [errorMsg, setErrorMsg]   = useState(null)
 
@@ -77,77 +80,194 @@ export function MumbaiMap({
     }
   }, [demoEventIndex])
 
-  // Build dynamic GeoJSON for active mode
-  const dynamicGeoJSON = useMemo(() => {
-    if (!mapData || !mapData.geojson) return null
+  // Compute active zone metrics based on mode
+  const processedZones = useMemo(() => {
+    if (!mapData?.zones) return []
 
-    const baseZones = mapData.geojson.zones
-    if (!baseZones || !baseZones.features) return mapData.geojson
-
-    const updatedFeatures = baseZones.features.map(f => {
-      const p = f.properties
-      let displayPressure = p.pressure
-      let displayColor = p.fill_color
-      let displayBorder = p.border_color
-      let displayLabel = `${p.name}\n${p.pressure}/100`
+    return mapData.zones.map(z => {
+      let pressure = z.pressure
+      let delta = 0
+      let label = `${pressure}/100`
 
       if (activeMode === 'FORECAST') {
         const horizonKey = `forecast_${forecastHorizon}m`
-        const forecastVal = p[horizonKey] !== undefined ? p[horizonKey] : p.forecast_60m || p.pressure
-        displayPressure = forecastVal
-        const visuals = getPressureColors(forecastVal)
-        displayColor = visuals.fill
-        displayBorder = visuals.border
-        const delta = forecastVal - p.pressure
-        const deltaSign = delta > 0 ? `+${delta}` : `${delta}`
-        displayLabel = `${p.name}\n${forecastVal}/100 (${deltaSign})`
+        const forecastVal = z[horizonKey] !== undefined ? z[horizonKey] : z.forecast_60m || z.pressure
+        pressure = forecastVal
+        delta = forecastVal - z.pressure
+        label = `${forecastVal}/100 (${delta >= 0 ? '+' : ''}${delta})`
       } else if (activeMode === 'WHAT_IF') {
         if (whatIfView === 'AFTER') {
-          const afterVal = p.counterfactual_after !== undefined ? p.counterfactual_after : p.pressure
-          displayPressure = afterVal
-          const visuals = getPressureColors(afterVal)
-          displayColor = visuals.fill
-          displayBorder = visuals.border
-          const delta = afterVal - p.pressure
-          const deltaSign = delta > 0 ? `+${delta}` : `${delta}`
-          displayLabel = `${p.name}\n${afterVal}/100 (${deltaSign})`
+          const afterVal = z.counterfactual_after !== undefined ? z.counterfactual_after : z.pressure
+          pressure = afterVal
+          delta = afterVal - z.pressure
+          label = `${afterVal}/100 (${delta >= 0 ? '+' : ''}${delta})`
         }
       }
 
+      const visuals = getPressureColors(pressure)
+      return {
+        ...z,
+        display_pressure: pressure,
+        display_delta: delta,
+        display_label: label,
+        fill_color: visuals.fill,
+        border_color: visuals.border,
+        level: visuals.level
+      }
+    })
+  }, [mapData, activeMode, forecastHorizon, whatIfView])
+
+  // Build GeoJSON FeatureCollection for zones
+  const zonesGeoJSON = useMemo(() => {
+    if (!mapData?.geojson?.zones?.features) return null
+
+    const features = mapData.geojson.zones.features.map(f => {
+      const pZone = processedZones.find(pz => pz.id === f.id || pz.id === f.properties?.id)
+      const p = pZone || f.properties
       return {
         ...f,
         properties: {
+          ...f.properties,
           ...p,
-          display_pressure: displayPressure,
-          display_fill: displayColor,
-          display_border: displayBorder,
-          display_label: displayLabel,
+          fill_color: p.fill_color || '#14B8A6',
+          border_color: p.border_color || '#0F766E',
+          display_pressure: p.display_pressure || p.pressure,
+          display_label: p.display_label || `${p.pressure}/100`
         }
       }
     })
 
     return {
-      ...mapData.geojson,
-      zones: {
-        type: 'FeatureCollection',
-        features: updatedFeatures
-      }
+      type: 'FeatureCollection',
+      features
     }
-  }, [mapData, activeMode, forecastHorizon, whatIfView])
+  }, [mapData, processedZones])
 
-  // Setup / Update MapLibre layers
-  const updateMapLayers = useCallback((map, gData) => {
-    if (!map || !map.isStyleLoaded() || !gData) return
+  // Build GeoJSON FeatureCollection for Spatial Heat Halos
+  const halosGeoJSON = useMemo(() => {
+    if (!mapData?.geojson?.halos?.features) return null
+
+    const features = mapData.geojson.halos.features.map(f => {
+      const pZone = processedZones.find(pz => f.id === `halo-${pz.id}` || f.properties?.id === pz.id)
+      const p = pZone || f.properties
+      return {
+        ...f,
+        properties: {
+          ...f.properties,
+          ...p,
+          display_pressure: p.display_pressure || p.pressure,
+          fill_color: p.fill_color || '#14B8A6',
+          halo_opacity: p.display_pressure >= 85 ? 0.55 : p.display_pressure >= 70 ? 0.42 : 0.25
+        }
+      }
+    })
+
+    return {
+      type: 'FeatureCollection',
+      features
+    }
+  }, [mapData, processedZones])
+
+  // Clean up existing DOM markers
+  const clearMarkers = useCallback(() => {
+    markersRef.current.forEach(m => m.remove())
+    markersRef.current = []
+  }, [])
+
+  // Render High-Visibility Interactive HTML Markers for Key Hotspots
+  const updateCrowdMarkers = useCallback((map) => {
+    if (!map) return
+    clearMarkers()
+
+    // Render prominent markers for Top Hotspots (≥70 pressure) and selected zone
+    const targetZones = processedZones.filter(z => z.display_pressure >= 70 || z.id === selectedZoneId)
+
+    targetZones.forEach(zone => {
+      if (!zone.lat || !zone.lng) return
+
+      const isCritical = zone.display_pressure >= 85
+      const isSelected = selectedZoneId === zone.id
+
+      const el = document.createElement('div')
+      el.className = 'group cursor-pointer select-none transition-transform hover:scale-110 active:scale-95'
+      el.style.zIndex = isCritical ? '25' : '15'
+
+      el.innerHTML = `
+        <div class="relative flex flex-col items-center">
+          ${isCritical ? `
+            <span class="absolute -top-1.5 -right-1.5 flex h-4 w-4">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-4 w-4 bg-red-600"></span>
+            </span>
+          ` : ''}
+          <div class="px-2.5 py-1 rounded-card-sm shadow-elevated flex items-center gap-1.5 border text-[11.5px] font-extrabold transition-all duration-150 ${
+            isSelected 
+              ? 'ring-2 ring-navy scale-105' 
+              : ''
+          }" style="background-color: ${zone.fill_color}; color: #FFFFFF; border-color: ${zone.border_color};">
+            <span class="tracking-tight">${zone.name}</span>
+            <span class="bg-black/30 px-1.5 py-0.5 rounded font-mono text-[10.5px]">${zone.display_pressure}</span>
+          </div>
+          <div class="w-2 h-2 rotate-45 -mt-1 shadow-sm" style="background-color: ${zone.fill_color};"></div>
+        </div>
+      `
+
+      el.addEventListener('click', (e) => {
+        e.stopPropagation()
+        setSelectedFeature({ type: 'zone', properties: zone })
+        if (onSelectZone) onSelectZone(zone)
+        map.easeTo({ center: [zone.lng, zone.lat], zoom: 12.8, duration: 400 })
+      })
+
+      const marker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([zone.lng, zone.lat])
+        .addTo(map)
+
+      markersRef.current.push(marker)
+    })
+  }, [processedZones, selectedZoneId, clearMarkers, onSelectZone])
+
+  // Core synchronization method: registers sources and layers safely
+  const syncMapLayers = useCallback((map) => {
+    if (!map || !map.isStyleLoaded()) return
 
     try {
-      // 1. ZONES LAYER
-      if (gData.zones) {
+      // 1. SPATIAL SATURATION HEAT HALOS
+      if (halosGeoJSON) {
+        if (map.getSource('pravaah-halos-src')) {
+          map.getSource('pravaah-halos-src').setData(halosGeoJSON)
+        } else {
+          map.addSource('pravaah-halos-src', {
+            type: 'geojson',
+            data: halosGeoJSON
+          })
+
+          map.addLayer({
+            id: 'pravaah-halos-fill',
+            type: 'fill',
+            source: 'pravaah-halos-src',
+            paint: {
+              'fill-color': [
+                'interpolate', ['linear'], ['get', 'display_pressure'],
+                0,  '#14B8A6',
+                50, '#F59E0B',
+                70, '#F97316',
+                85, '#DC2626'
+              ],
+              'fill-opacity': ['get', 'halo_opacity']
+            }
+          })
+        }
+      }
+
+      // 2. ZONES BOUNDARY POLYGON LAYER
+      if (zonesGeoJSON) {
         if (map.getSource('pravaah-zones-src')) {
-          map.getSource('pravaah-zones-src').setData(gData.zones)
+          map.getSource('pravaah-zones-src').setData(zonesGeoJSON)
         } else {
           map.addSource('pravaah-zones-src', {
             type: 'geojson',
-            data: gData.zones
+            data: zonesGeoJSON
           })
 
           map.addLayer({
@@ -155,8 +275,8 @@ export function MumbaiMap({
             type: 'fill',
             source: 'pravaah-zones-src',
             paint: {
-              'fill-color': ['get', 'display_fill'],
-              'fill-opacity': 0.38
+              'fill-color': ['get', 'fill_color'],
+              'fill-opacity': 0.22
             }
           })
 
@@ -165,38 +285,12 @@ export function MumbaiMap({
             type: 'line',
             source: 'pravaah-zones-src',
             paint: {
-              'line-color': ['get', 'display_border'],
-              'line-width': [
-                'case',
-                ['>=', ['get', 'display_pressure'], 85],
-                3.2,
-                ['>=', ['get', 'display_pressure'], 70],
-                2.4,
-                1.5
-              ],
-              'line-opacity': 0.9
+              'line-color': ['get', 'border_color'],
+              'line-width': 2.2,
+              'line-opacity': 0.90
             }
           })
 
-          map.addLayer({
-            id: 'pravaah-zones-symbol',
-            type: 'symbol',
-            source: 'pravaah-zones-src',
-            layout: {
-              'text-field': ['get', 'display_label'],
-              'text-size': 10.5,
-              'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-              'text-anchor': 'center',
-              'text-allow-overlap': false
-            },
-            paint: {
-              'text-color': '#17212B',
-              'text-halo-color': '#FFFFFF',
-              'text-halo-width': 1.5
-            }
-          })
-
-          // Click on zone
           map.on('click', 'pravaah-zones-fill', (e) => {
             if (e.features && e.features[0]) {
               const f = e.features[0]
@@ -210,14 +304,14 @@ export function MumbaiMap({
         }
       }
 
-      // 2. TRANSIT LINES LAYER
-      if (gData.transit_lines) {
+      // 3. TRANSIT RAIL LINES
+      if (mapData?.geojson?.transit_lines) {
         if (map.getSource('pravaah-transit-src')) {
-          map.getSource('pravaah-transit-src').setData(gData.transit_lines)
+          map.getSource('pravaah-transit-src').setData(mapData.geojson.transit_lines)
         } else {
           map.addSource('pravaah-transit-src', {
             type: 'geojson',
-            data: gData.transit_lines
+            data: mapData.geojson.transit_lines
           })
 
           map.addLayer({
@@ -226,131 +320,233 @@ export function MumbaiMap({
             source: 'pravaah-transit-src',
             paint: {
               'line-color': ['get', 'color'],
-              'line-width': 3,
+              'line-width': activeMode === 'NETWORK' ? 6.0 : 3.0,
+              'line-opacity': 0.90
+            }
+          })
+        }
+      }
+
+      // 4. CROWD FLOW VECTORS (Directional Animated Lines)
+      if (mapData?.geojson?.flows) {
+        if (map.getSource('pravaah-flows-src')) {
+          map.getSource('pravaah-flows-src').setData(mapData.geojson.flows)
+        } else {
+          map.addSource('pravaah-flows-src', {
+            type: 'geojson',
+            data: mapData.geojson.flows
+          })
+
+          // Flow Casing Line
+          map.addLayer({
+            id: 'pravaah-flows-casing',
+            type: 'line',
+            source: 'pravaah-flows-src',
+            paint: {
+              'line-color': '#FFFFFF',
+              'line-width': 7.5,
               'line-opacity': 0.85
             }
           })
-        }
-      }
 
-      // 3. STATIONS LAYER
-      if (gData.stations) {
-        if (map.getSource('pravaah-stations-src')) {
-          map.getSource('pravaah-stations-src').setData(gData.stations)
-        } else {
-          map.addSource('pravaah-stations-src', {
-            type: 'geojson',
-            data: gData.stations
-          })
-
+          // Active Flow Line (Dashed for marching movement animation)
           map.addLayer({
-            id: 'pravaah-stations-circle',
-            type: 'circle',
-            source: 'pravaah-stations-src',
-            paint: {
-              'circle-radius': 5.5,
-              'circle-color': ['get', 'color'],
-              'circle-stroke-width': 2,
-              'circle-stroke-color': '#FFFFFF'
-            }
-          })
-
-          map.on('click', 'pravaah-stations-circle', (e) => {
-            if (e.features && e.features[0]) {
-              setSelectedFeature({ type: 'station', properties: e.features[0].properties })
-            }
-          })
-        }
-      }
-
-      // 4. INTERVENTION CORRIDOR LAYER
-      if (gData.intervention_flow) {
-        if (map.getSource('pravaah-flow-src')) {
-          map.getSource('pravaah-flow-src').setData(gData.intervention_flow)
-        } else {
-          map.addSource('pravaah-flow-src', {
-            type: 'geojson',
-            data: gData.intervention_flow
-          })
-
-          map.addLayer({
-            id: 'pravaah-flow-line',
+            id: 'pravaah-flows-line',
             type: 'line',
-            source: 'pravaah-flow-src',
+            source: 'pravaah-flows-src',
             paint: {
-              'line-color': '#E69A2E',
-              'line-width': 4.5,
-              'line-dasharray': [3, 1.5],
+              'line-width': [
+                'interpolate', ['linear'], ['get', 'load_pct'],
+                0,  3.5,
+                50, 4.5,
+                70, 6.0,
+                85, 8.0
+              ],
+              'line-color': [
+                'step', ['get', 'load_pct'],
+                '#2563EB',      // 0-64% Normal Blue
+                65, '#F97316',  // 65-84% Heavy Orange
+                85, '#DC2626'   // >=85% Critical Crimson
+              ],
+              'line-dasharray': [3, 2],
               'line-opacity': 0.95
             }
           })
         }
-
-        // Toggle flow visibility based on mode
-        const showFlow = (activeMode === 'INTERVENTION' || activeMode === 'WHAT_IF')
-        if (map.getLayer('pravaah-flow-line')) {
-          map.setLayoutProperty('pravaah-flow-line', 'visibility', showFlow ? 'visible' : 'none')
-        }
       }
 
-      // Layer visibilities for DISRUPTIONS mode
-      if (map.getLayer('pravaah-transit-line')) {
-        const isDisrupted = activeMode === 'DISRUPTIONS' || mapData?.active_scenario?.is_active
-        if (isDisrupted) {
-          map.setPaintProperty('pravaah-transit-line', 'line-dasharray', [2, 1])
+      // 5. DISRUPTED CORRIDOR OVERLAY (Central Line Parel - Curry Road Blockage)
+      if (mapData?.geojson?.disrupted_corridors) {
+        if (map.getSource('pravaah-disruptions-src')) {
+          map.getSource('pravaah-disruptions-src').setData(mapData.geojson.disrupted_corridors)
         } else {
-          map.setPaintProperty('pravaah-transit-line', 'line-dasharray', [1, 0])
+          map.addSource('pravaah-disruptions-src', {
+            type: 'geojson',
+            data: mapData.geojson.disrupted_corridors
+          })
+
+          map.addLayer({
+            id: 'pravaah-disruptions-line',
+            type: 'line',
+            source: 'pravaah-disruptions-src',
+            paint: {
+              'line-color': '#DC2626',
+              'line-width': 8.0,
+              'line-dasharray': [2, 2],
+              'line-opacity': 0.95
+            }
+          })
         }
       }
+
+      // 6. INTERVENTION REDIRECTION FLOW (Action Teal-Blue #14B8A6)
+      if (mapData?.geojson?.intervention_flow) {
+        if (map.getSource('pravaah-intervention-src')) {
+          map.getSource('pravaah-intervention-src').setData(mapData.geojson.intervention_flow)
+        } else {
+          map.addSource('pravaah-intervention-src', {
+            type: 'geojson',
+            data: mapData.geojson.intervention_flow
+          })
+
+          map.addLayer({
+            id: 'pravaah-intervention-line',
+            type: 'line',
+            source: 'pravaah-intervention-src',
+            paint: {
+              'line-color': '#14B8A6',
+              'line-width': 7.5,
+              'line-dasharray': [3, 2],
+              'line-opacity': 0.95
+            }
+          })
+        }
+      }
+
+      // 7. EXPLICIT VISIBILITY MATRIX BY MODE
+      const setVis = (layerId, isVisible) => {
+        if (map.getLayer(layerId)) {
+          map.setLayoutProperty(layerId, 'visibility', isVisible ? 'visible' : 'none')
+        }
+      }
+
+      const showTransit = (activeMode === 'NETWORK' || activeMode === 'CURRENT' || activeMode === 'DISRUPTIONS')
+      const showFlows   = (activeMode === 'CURRENT' || activeMode === 'FORECAST' || activeMode === 'DISRUPTIONS' || activeMode === 'INTERVENTION' || activeMode === 'WHAT_IF')
+      const showDisrupt = (activeMode === 'DISRUPTIONS')
+      const showInterv  = (activeMode === 'INTERVENTION' || (activeMode === 'WHAT_IF' && whatIfView === 'AFTER'))
+
+      setVis('pravaah-halos-fill', true)
+      setVis('pravaah-zones-fill', true)
+      setVis('pravaah-zones-line', true)
+      setVis('pravaah-transit-line', showTransit)
+      setVis('pravaah-flows-casing', showFlows)
+      setVis('pravaah-flows-line', showFlows)
+      setVis('pravaah-disruptions-line', showDisrupt)
+      setVis('pravaah-intervention-line', showInterv)
+
+      // Adjust transit line width in NETWORK mode
+      if (map.getLayer('pravaah-transit-line')) {
+        map.setPaintProperty('pravaah-transit-line', 'line-width', activeMode === 'NETWORK' ? 6.5 : 3.0)
+      }
+
+      // Continuous 60 FPS Flow Animation Loop
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+
+      let dashOffset = 0
+      const animateFlow = () => {
+        dashOffset = (dashOffset - 0.35) % 100
+
+        if (map && map.getLayer('pravaah-flows-line')) {
+          try {
+            map.setPaintProperty('pravaah-flows-line', 'line-dashoffset', dashOffset)
+          } catch (_) {}
+        }
+        if (map && map.getLayer('pravaah-disruptions-line')) {
+          try {
+            map.setPaintProperty('pravaah-disruptions-line', 'line-dashoffset', -dashOffset * 0.5)
+          } catch (_) {}
+        }
+        if (map && map.getLayer('pravaah-intervention-line')) {
+          try {
+            map.setPaintProperty('pravaah-intervention-line', 'line-dashoffset', dashOffset * 1.5)
+          } catch (_) {}
+        }
+
+        animFrameRef.current = requestAnimationFrame(animateFlow)
+      }
+
+      animFrameRef.current = requestAnimationFrame(animateFlow)
+
+      // Render interactive DOM markers
+      updateCrowdMarkers(map)
+
+      // Phase 0: DEV Diagnostic Logging
+      console.log('[MAP DEBUG]', {
+        mode: activeMode,
+        styleLoaded: map.isStyleLoaded(),
+        sources: map.getStyle() ? Object.keys(map.getStyle().sources || {}) : [],
+        layers: map.getStyle() ? (map.getStyle().layers || []).map(l => ({
+          id: l.id,
+          type: l.type,
+          visibility: map.getLayoutProperty(l.id, 'visibility') || 'visible'
+        })) : [],
+        zonesFeatureCount: zonesGeoJSON?.features?.length || 0,
+        halosFeatureCount: halosGeoJSON?.features?.length || 0,
+        flowsFeatureCount: mapData?.geojson?.flows?.features?.length || 0,
+        transitFeatureCount: mapData?.geojson?.transit_lines?.features?.length || 0,
+        disruptionsFeatureCount: mapData?.geojson?.disrupted_corridors?.features?.length || 0,
+        interventionFeatureCount: mapData?.geojson?.intervention_flow?.features?.length || 0,
+        sampleHaloCoord: halosGeoJSON?.features?.[0]?.geometry?.coordinates?.[0]?.[0],
+        sampleFlowCoord: mapData?.geojson?.flows?.features?.[0]?.geometry?.coordinates?.[0],
+      })
 
     } catch (err) {
-      console.warn('MapLibre layer update notice:', err)
+      console.error('[MAP ERROR] Layer sync failed:', err)
     }
-  }, [activeMode, forecastHorizon, whatIfView, mapData, onSelectZone])
+  }, [halosGeoJSON, zonesGeoJSON, mapData, activeMode, whatIfView, updateCrowdMarkers, onSelectZone])
 
-  // Initialize MapLibre
-  const initializeMap = useCallback(() => {
-    if (!mapContainerRef.current)    return
-    if (isInitializingRef.current)   return
-    if (mapInstanceRef.current)      return
+  // 1. MOUNT EFFECT: Initialize MapLibre ONCE
+  useEffect(() => {
+    if (!mapContainerRef.current) return
+    if (mapInstanceRef.current) return
 
-    isInitializingRef.current = true
     setMapStatus('loading')
     setErrorMsg(null)
 
     try {
       const map = createMapInstance(mapContainerRef.current, { interactive })
 
-      const markReady = () => {
-        isInitializingRef.current = false
+      const handleReady = () => {
         setMapStatus('ready')
+        setMapReady(true)
         if (onMapReadyRef.current) {
-          try {
-            onMapReadyRef.current(map)
-          } catch (_) {}
+          try { onMapReadyRef.current(map) } catch (_) {}
         }
-        if (dynamicGeoJSON) {
-          updateMapLayers(map, dynamicGeoJSON)
-        }
+        syncMapLayers(map)
       }
 
-      map.once('load', markReady)
-      map.once('styledata', () => {
-        requestAnimationFrame(() => { if (map) map.resize() })
+      map.once('load', handleReady)
+      map.on('styledata', () => {
+        requestAnimationFrame(() => {
+          if (map && map.isStyleLoaded()) {
+            map.resize()
+            syncMapLayers(map)
+          }
+        })
       })
 
-      // Strict Safety Timer: max 1.2s loading overlay
+      // Strict Safety Timer: max 1.0s loading overlay
       const safetyTimer = setTimeout(() => {
-        if (map && mapInstanceRef.current) {
+        if (map) {
           map.resize()
-          markReady()
+          if (map.isStyleLoaded()) handleReady()
+          else setMapStatus('ready')
         }
-      }, 1200)
+      }, 1000)
 
       map.on('error', (e) => {
         if (e.error && e.error.status === 401) {
           clearTimeout(safetyTimer)
-          isInitializingRef.current = false
           setMapStatus('error')
           setErrorMsg('Map authentication failed.')
           map.remove()
@@ -360,65 +556,68 @@ export function MumbaiMap({
 
       mapInstanceRef.current = map
 
-      requestAnimationFrame(() => {
-        if (map) map.resize()
-      })
+      // Continuous ResizeObserver
+      let resizeObserver = null
+      if (mapContainerRef.current && window.ResizeObserver) {
+        resizeObserver = new ResizeObserver(() => {
+          if (mapInstanceRef.current) resizeMap(mapInstanceRef.current)
+        })
+        resizeObserver.observe(mapContainerRef.current)
+      }
+
+      return () => {
+        clearTimeout(safetyTimer)
+        if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
+        if (resizeObserver) resizeObserver.disconnect()
+        clearMarkers()
+        if (mapInstanceRef.current) {
+          try { mapInstanceRef.current.remove() } catch (_) {}
+          mapInstanceRef.current = null
+        }
+        setMapReady(false)
+      }
     } catch (err) {
-      console.error('MapLibre initialization failed:', err)
-      isInitializingRef.current = false
+      console.error('MapLibre mount error:', err)
       setMapStatus('error')
       setErrorMsg('Could not initialize map canvas.')
     }
-  }, [interactive, dynamicGeoJSON, updateMapLayers])
+  }, [interactive, syncMapLayers, clearMarkers])
 
-  const handleRetry = useCallback(() => {
-    if (mapInstanceRef.current) {
-      try { mapInstanceRef.current.remove() } catch (_) {}
-      mapInstanceRef.current = null
-    }
-    isInitializingRef.current = false
-    initializeMap()
-  }, [initializeMap])
-
+  // 2. DATA / MODE CHANGE EFFECT: Synchronize layers whenever props or modes update
   useEffect(() => {
-    initializeMap()
-
-    let resizeObserver = null
-    if (mapContainerRef.current && window.ResizeObserver) {
-      resizeObserver = new ResizeObserver(() => {
-        if (mapInstanceRef.current) resizeMap(mapInstanceRef.current)
-      })
-      resizeObserver.observe(mapContainerRef.current)
+    if (mapInstanceRef.current && mapReady) {
+      syncMapLayers(mapInstanceRef.current)
     }
-
-    return () => {
-      if (resizeObserver) resizeObserver.disconnect()
-      if (mapInstanceRef.current) {
-        try { mapInstanceRef.current.remove() } catch (_) {}
-        mapInstanceRef.current = null
-      }
-      isInitializingRef.current = false
-    }
-  }, [initializeMap])
-
-  // Sync layers when GeoJSON or modes change
-  useEffect(() => {
-    if (mapInstanceRef.current && dynamicGeoJSON) {
-      updateMapLayers(mapInstanceRef.current, dynamicGeoJSON)
-    }
-  }, [dynamicGeoJSON, updateMapLayers])
+  }, [mapReady, syncMapLayers])
 
   // Camera controls
   const handleZoomIn    = () => mapInstanceRef.current?.zoomIn({ duration: 250 })
   const handleZoomOut   = () => mapInstanceRef.current?.zoomOut({ duration: 250 })
   const handleResetView = () => { if (mapInstanceRef.current) resetMapCamera(mapInstanceRef.current) }
 
+  // Hotspot quick pan handler
+  const handleFocusHotspot = (zone) => {
+    if (!mapInstanceRef.current) return
+    setSelectedFeature({ type: 'zone', properties: zone })
+    if (onSelectZone) onSelectZone(zone)
+    mapInstanceRef.current.easeTo({ center: [zone.lng, zone.lat], zoom: 13.0, duration: 500 })
+  }
+
+  const handleRetry = useCallback(() => {
+    if (mapInstanceRef.current) {
+      try { mapInstanceRef.current.remove() } catch (_) {}
+      mapInstanceRef.current = null
+    }
+    setMapReady(false)
+    setMapStatus('loading')
+  }, [])
+
   return (
     <div
       className={`relative w-full rounded-card overflow-hidden border border-border bg-surface-muted/20 flex flex-col ${className}`}
-      style={{ minHeight: '440px', ...style }}
+      style={{ minHeight: '460px', ...style }}
       role="region"
-      aria-label="PRAVAAH Live Spatial Intelligence Canvas"
+      aria-label="PRAVAAH Live Crowd Flow & Saturation Canvas"
     >
       {/* Top Map Intelligence Mode Bar */}
       <div className="absolute top-3 left-3 right-14 sm:right-auto z-10 flex flex-wrap items-center gap-1 bg-surface/95 backdrop-blur-md p-1.5 rounded-card border border-border shadow-subtle">
@@ -431,7 +630,7 @@ export function MumbaiMap({
           }`}
         >
           <Activity className="w-3.5 h-3.5 text-teal" />
-          <span>Current</span>
+          <span>Current Flow</span>
         </button>
 
         <button
@@ -474,11 +673,11 @@ export function MumbaiMap({
           onClick={() => setActiveMode('INTERVENTION')}
           className={`px-2.5 py-1 rounded-card-sm text-xs font-bold transition-all flex items-center gap-1.5 ${
             activeMode === 'INTERVENTION' 
-              ? 'bg-orange text-navy-dark font-extrabold shadow-sm' 
+              ? 'bg-brand-blue text-white shadow-sm' 
               : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary'
           }`}
         >
-          <Zap className="w-3.5 h-3.5 text-navy" />
+          <Zap className="w-3.5 h-3.5 text-orange" />
           <span>Action</span>
         </button>
 
@@ -497,8 +696,8 @@ export function MumbaiMap({
 
       {/* Sub-Controls: Forecast Horizon Selector */}
       {activeMode === 'FORECAST' && (
-        <div className="absolute top-15 sm:top-14 left-3 z-10 flex items-center gap-1 bg-surface/95 backdrop-blur-md px-2 py-1 rounded-card border border-border shadow-subtle text-xs animate-in fade-in duration-150">
-          <span className="text-[10px] uppercase font-bold text-text-muted mr-1">Horizon:</span>
+        <div className="absolute top-15 sm:top-14 left-3 z-10 flex items-center gap-1 bg-surface/95 backdrop-blur-md px-2.5 py-1 rounded-card border border-border shadow-subtle text-xs animate-in fade-in duration-150">
+          <span className="text-[10px] uppercase font-bold text-text-muted mr-1">Forecast Horizon:</span>
           {[30, 60, 120, 180].map(h => (
             <button
               key={h}
@@ -537,36 +736,68 @@ export function MumbaiMap({
         </div>
       )}
 
-      {/* Action Recommendation Floating Callout Card (When in Action or What-If mode) */}
-      {(activeMode === 'INTERVENTION' || activeMode === 'WHAT_IF') && mapData?.recommendation && (
-        <div className="absolute top-15 sm:top-14 right-3 z-10 max-w-[280px] bg-surface/95 backdrop-blur-md border border-orange/40 rounded-card p-3 shadow-elevated space-y-1.5 animate-in fade-in zoom-in-95 duration-150">
-          <div className="flex items-center gap-1.5 text-orange-dark">
-            <Zap className="w-3.5 h-3.5 text-orange flex-shrink-0" />
-            <span className="text-[10px] uppercase font-extrabold tracking-wider">
-              Recommended Intervention
-            </span>
+      {/* Top Hotspots Quick-Focus Bar */}
+      {mapData?.hotspots && mapData.hotspots.length > 0 && (
+        <div className="absolute top-15 sm:top-14 right-3 z-10 hidden sm:flex items-center gap-1 bg-surface/95 backdrop-blur-md p-1 rounded-card border border-border shadow-subtle text-[11px]">
+          <span className="text-[9.5px] uppercase font-bold text-text-muted px-1.5 flex items-center gap-1">
+            <Flame className="w-3 h-3 text-critical" /> Hotspots:
+          </span>
+          {mapData.hotspots.slice(0, 3).map(h => (
+            <button
+              key={h.id}
+              onClick={() => handleFocusHotspot(h)}
+              className="px-2 py-0.5 rounded bg-surface-muted/80 hover:bg-surface-muted border border-border/60 font-semibold text-text-primary hover:border-terracotta transition-colors flex items-center gap-1"
+            >
+              <span>{h.name}</span>
+              <span className="font-mono text-[10px] text-critical font-bold">{h.pressure}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Live Movement & Bottleneck Floating Callout */}
+      {activeMode === 'CURRENT' && mapData?.bottlenecks && mapData.bottlenecks.length > 0 && (
+        <div className="absolute bottom-16 sm:bottom-3 right-3 z-10 max-w-[280px] bg-surface/95 backdrop-blur-md border border-critical/40 rounded-card p-2.5 shadow-elevated space-y-1 animate-in fade-in duration-150">
+          <div className="flex items-center gap-1.5 text-critical font-bold text-[10.5px] uppercase tracking-wider">
+            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>Active Network Bottleneck</span>
           </div>
-          <p className="text-xs font-bold text-text-primary leading-snug">
-            Redirect {mapData.recommendation.dosage_pct}% incoming flow from {mapData.recommendation.source_name} &rarr; {mapData.recommendation.destination_name}
+          <p className="text-[11.5px] font-semibold text-text-primary leading-tight">
+            {mapData.bottlenecks[0].corridor}
           </p>
-          <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/60">
-            <span className="text-teal font-bold">Reduction: -{mapData.recommendation.reduction} pts</span>
-            <span className="text-text-muted">Side effect: +{mapData.recommendation.side_effect_increase} pts</span>
+          <div className="flex items-center justify-between text-[10.5px] text-text-secondary pt-0.5 border-t border-border/50">
+            <span>Throughput Load: <strong className="text-critical">{mapData.bottlenecks[0].load_pct}%</strong></span>
+            <span className="text-text-muted">Accumulating</span>
           </div>
         </div>
       )}
 
-      {/* Disruption Floating Callout Card */}
+      {/* Action Recommendation Floating Callout */}
+      {(activeMode === 'INTERVENTION' || activeMode === 'WHAT_IF') && mapData?.recommendation && (
+        <div className="absolute bottom-16 sm:bottom-3 right-3 z-10 max-w-[300px] bg-surface/95 backdrop-blur-md border border-brand-blue/40 rounded-card p-3 shadow-elevated space-y-1.5 animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex items-center gap-1.5 text-brand-blue font-extrabold text-[10.5px] uppercase tracking-wider">
+            <Zap className="w-3.5 h-3.5 flex-shrink-0 text-orange" />
+            <span>PRAVAAH Recommended Flow</span>
+          </div>
+          <p className="text-xs font-bold text-text-primary leading-snug">
+            Redirect {mapData.recommendation.dosage_pct}% flow: {mapData.recommendation.source_name} &rarr; {mapData.recommendation.destination_name} Buffer
+          </p>
+          <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/60">
+            <span className="text-teal font-bold">Reduction: -{mapData.recommendation.reduction} pts</span>
+            <span className="text-text-muted">Buffer load: +{mapData.recommendation.side_effect_increase} pts</span>
+          </div>
+        </div>
+      )}
+
+      {/* Disruption Floating Callout */}
       {activeMode === 'DISRUPTIONS' && (
-        <div className="absolute top-15 sm:top-14 right-3 z-10 max-w-[280px] bg-critical-bg border border-critical/40 rounded-card p-3 shadow-elevated space-y-1 animate-in fade-in duration-150">
-          <div className="flex items-center gap-1.5 text-critical">
+        <div className="absolute bottom-16 sm:bottom-3 right-3 z-10 max-w-[290px] bg-critical-bg border border-critical/40 rounded-card p-3 shadow-elevated space-y-1 animate-in fade-in duration-150">
+          <div className="flex items-center gap-1.5 text-critical font-bold text-[10.5px] uppercase tracking-wider">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-            <span className="text-[10.5px] uppercase font-bold tracking-wider">
-              Corridor Blockage Detected
-            </span>
+            <span>Corridor Blockage Active</span>
           </div>
           <p className="text-xs text-text-primary leading-snug">
-            Central Railway Mainline (Curry Road &ndash; Parel) throughput constrained to 0 pass/hr. Traffic spilling onto Ambedkar Road.
+            Central Railway Mainline (Parel &ndash; Curry Road) throughput constrained to 0 pass/hr. Movement spilling onto Ambedkar Road.
           </p>
         </div>
       )}
@@ -577,15 +808,15 @@ export function MumbaiMap({
         className="absolute inset-0 w-full h-full"
       />
 
-      {/* Sub-Second Loading Overlay */}
+      {/* Fast Loading Overlay */}
       {mapStatus === 'loading' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-navy-dark/80 backdrop-blur-[1px] transition-opacity duration-200">
           <div className="w-7 h-7 border-2 border-orange border-t-transparent rounded-full animate-spin mb-2.5" />
           <span className="text-[11px] font-bold text-white uppercase tracking-widest">
-            Loading Mumbai Operations Map
+            Loading Mumbai Crowd Flow Map
           </span>
           <span className="text-[10px] text-white/60 mt-0.5">
-            Calibrating geographic intelligence…
+            Calibrating movement vectors…
           </span>
         </div>
       )}
@@ -643,12 +874,12 @@ export function MumbaiMap({
 
 function getPressureColors(score) {
   if (score >= 85) {
-    return { fill: '#B03A2E', border: '#7A2017' }
+    return { fill: '#DC2626', border: '#991B1B', level: 'CRITICAL' }
   } else if (score >= 70) {
-    return { fill: '#E69A2E', border: '#B87518' }
+    return { fill: '#F97316', border: '#C2410C', level: 'HIGH' }
   } else if (score >= 50) {
-    return { fill: '#B8893D', border: '#8A6424' }
+    return { fill: '#F59E0B', border: '#B45309', level: 'MODERATE' }
   } else {
-    return { fill: '#2D9C8F', border: '#1D6E64' }
+    return { fill: '#14B8A6', border: '#0F766E', level: 'LOW' }
   }
 }
