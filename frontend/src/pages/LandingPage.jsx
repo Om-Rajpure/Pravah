@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom'
 import {
   Menu, X, ArrowRight, LayoutDashboard, Map, TrendingUp, Zap,
   Shield, FlaskConical, BarChart3, Hotel, TrainFront, HeartHandshake,
-  Users, Activity, AlertTriangle, Eye
+  Users, Activity, AlertTriangle, Eye, CheckCircle2, ChevronRight
 } from 'lucide-react'
 import { HeroPreview } from '../components/landing/HeroPreview'
 import { PredictionStory } from '../components/landing/PredictionStory'
