@@ -4,18 +4,44 @@
  */
 
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// Fallback host resolution depending on device environment
-const getDefaultApiUrl = () => {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+// Smart host resolution depending on device environment & Expo Go host
+const getDefaultApiUrl = (): string => {
+  const envUrl = process.env.EXPO_PUBLIC_API_URL;
+
+  // 1. If running in Expo Go on a physical phone, automatically resolve computer's LAN IP from Metro host
+  try {
+    const hostUri =
+      Constants.expoConfig?.hostUri ||
+      (Constants as any).manifest2?.extra?.expoGo?.debuggerHost ||
+      (Constants as any).manifest?.debuggerHost;
+
+    if (hostUri) {
+      const hostIp = hostUri.split(':')[0];
+      if (hostIp && hostIp !== 'localhost' && hostIp !== '127.0.0.1' && hostIp !== '10.0.2.2') {
+        // If envUrl is not set or still points to emulator 10.0.2.2 / localhost, use inferred LAN IP
+        if (!envUrl || envUrl.includes('10.0.2.2') || envUrl.includes('localhost')) {
+          return `http://${hostIp}:5000`;
+        }
+      }
+    }
+  } catch (e) {
+    // Non-fatal
   }
-  // Android Emulator uses 10.0.2.2 to reach host machine localhost
+
+  // 2. Use explicitly configured environment URL
+  if (envUrl) {
+    return envUrl;
+  }
+
+  // 3. Fallback for Android Emulator
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:5000';
   }
-  // iOS Simulator & Web
+
+  // 4. Fallback for iOS Simulator & Web
   return 'http://localhost:5000';
 };
 
@@ -43,7 +69,7 @@ export const setAuthToken = async (token: string | null) => {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
     }
   } catch (err) {
-    // Non-fatal if SecureStore fails on web or unsupported environment
+    // Non-fatal fallback for environments where SecureStore is unavailable
     console.warn('[SecureStore] Storage notice:', err);
   }
 };
@@ -73,7 +99,12 @@ export async function apiFetch<T = any>(
   const baseUrl = getApiBaseUrl().replace(/\/$/, '');
   const url = `${baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
 
-  const token = await getStoredAuthToken();
+  let token: string | null = null;
+  try {
+    token = await getStoredAuthToken();
+  } catch (e) {
+    // Non-fatal
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -86,7 +117,8 @@ export async function apiFetch<T = any>(
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout
+  // Safe 8s timeout to avoid keeping startup waiting
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
 
   try {
     const response = await fetch(url, {
@@ -130,16 +162,16 @@ export async function apiFetch<T = any>(
     const isNetwork = err.message?.includes('Network request failed') || isTimeout;
 
     const errorText = isTimeout
-      ? 'Connection timed out. Please check your network.'
+      ? 'Connection timed out. Server taking too long to respond.'
       : isNetwork
-      ? 'Unable to connect to PRAVAAH server. Please check your connection.'
-      : (err.message || 'An unexpected error occurred.');
+      ? 'Unable to connect to PRAVAAH server. Showing cached/simulated telemetry.'
+      : (err.message || 'An unexpected network error occurred.');
 
     return {
       data: null,
       error: errorText,
       status: isTimeout ? 408 : isNetwork ? 0 : 500,
-      isOffline: isNetwork,
+      isOffline: true,
     };
   }
 }

@@ -8,11 +8,14 @@ export const SplashScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   useEffect(() => {
     if (!isLoading) {
-      if (isAuthenticated) {
-        navigation.replace('MainTabs');
-      } else {
-        navigation.replace('Login');
-      }
+      const timer = setTimeout(() => {
+        if (isAuthenticated) {
+          navigation.replace('MainTabs');
+        } else {
+          navigation.replace('Login');
+        }
+      }, 350);
+      return () => clearTimeout(timer);
     }
   }, [isLoading, isAuthenticated, navigation]);
 

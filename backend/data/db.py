@@ -2,6 +2,9 @@
 PRAVAAH DuckDB Storage Layer & Database Manager
 """
 
+import sys
+sys.modules['pandas'] = None
+
 import os
 import logging
 import duckdb

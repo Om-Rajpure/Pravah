@@ -58,7 +58,7 @@ export const HospitalityScreen: React.FC<{ navigation: any }> = ({ navigation })
         <View style={[styles.adviceCard, shadows.subtle]}>
           <Text style={styles.adviceHeader}>💡 PRAVAAH Travel Advice</Text>
           <Text style={styles.adviceText}>
-            Central Mumbai hotels are at 89% occupancy with elevated tariffs. Book in the <strong>Thane / Navi Mumbai Suburban Buffer</strong> for 50% lower tariffs and 25-minute direct fast train access to Dadar.
+            Central Mumbai hotels are at 89% occupancy with elevated tariffs. Book in the <Text style={{ fontWeight: '700' }}>Thane / Navi Mumbai Suburban Buffer</Text> for 50% lower tariffs and 25-minute direct fast train access to Dadar.
           </Text>
         </View>
 

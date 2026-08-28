@@ -11,6 +11,10 @@
       "resizeMode": "contain",
       "backgroundColor": "#0B2342"
     },
+    "updates": {
+      "enabled": false,
+      "checkAutomatically": "NEVER"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "in.gov.pravaah.mobile"
@@ -30,7 +34,7 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "http://10.0.2.2:5000"
+      "apiUrl": "http://10.38.117.66:5000"
     }
   }
 }

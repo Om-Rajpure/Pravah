@@ -1,3 +1,7 @@
+import sys
+# Prevent DuckDB from attempting to load Anaconda's binary-incompatible pandas 1.x with NumPy 2.x
+sys.modules['pandas'] = None
+
 import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -23,6 +27,7 @@ from routes.explainability import explainability_bp
 from routes.visitor import visitor_bp
 from routes.privacy import privacy_bp
 from routes.weather import weather_bp
+from routes.auth import auth_bp
 
 logging.basicConfig(
     level=logging.INFO if Config.ENV == 'production' else logging.INFO,
@@ -34,7 +39,7 @@ def create_app():
     Config.validate_startup_config()
     
     app = Flask(__name__)
-    CORS(app, origins=Config.CORS_ORIGINS)
+    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
     # Security Headers Middleware
     @app.after_request
@@ -93,6 +98,7 @@ def create_app():
     app.register_blueprint(visitor_bp)
     app.register_blueprint(privacy_bp)
     app.register_blueprint(weather_bp)
+    app.register_blueprint(auth_bp)
 
     return app
 
