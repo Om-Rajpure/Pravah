@@ -1,6 +1,6 @@
 /**
  * PRAVAAH Map Service
- * MapLibre GL JS + reliable tile providers (Carto Positron primary, OpenFreeMap fallback).
+ * MapLibre GL JS + OpenStreetMap raster tiles (No API key required)
  */
 
 import * as maplibregl from 'maplibre-gl'
@@ -21,12 +21,11 @@ export function createMapInstance(container, customOptions = {}) {
 
   const map = new maplibregl.Map(options)
 
-  // Compact attribution at bottom-right
+  // Compact OpenStreetMap + OpenFreeMap attribution at bottom-right
   const attribution = new maplibregl.AttributionControl({
     compact: true,
     customAttribution:
-      '© <a href="https://carto.com/" target="_blank" rel="noopener">CARTO</a> ' +
-      '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+      '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
   })
   map.addControl(attribution, 'bottom-right')
 

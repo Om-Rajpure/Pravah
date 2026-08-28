@@ -1,10 +1,11 @@
 /**
  * MumbaiMap — PRAVAAH Live Crowd Flow, Saturation & Train Simulation Canvas
+ * MapLibre GL JS + OpenFreeMap Bright (No API keys required)
  * 
  * Quantity Classification Taxonomy:
- * - SPARSE:   0–20%    (#14B8A6) Teal
+ * - SPARSE:   0–20%    (#0D9488) Teal
  * - LIGHT:    20–40%   (#2563EB) Blue
- * - MODERATE: 40–60%   (#F59E0B) Amber
+ * - MODERATE: 40–60%   (#D97706) Amber
  * - HEAVY:    60–85%   (#F97316) Orange
  * - CRITICAL: 85–100%+ (#DC2626) Crimson
  */
@@ -55,8 +56,8 @@ export function MumbaiMap({
 
   // Map Modes: 'CURRENT' | 'FORECAST' | 'NETWORK' | 'DISRUPTIONS' | 'INTERVENTION' | 'WHAT_IF'
   const [activeMode, setActiveMode] = useState('CURRENT')
-  const [forecastHorizon, setForecastHorizon] = useState(60) // 30 | 60 | 120 | 180
-  const [whatIfView, setWhatIfView] = useState('AFTER') // 'BEFORE' | 'AFTER'
+  const [forecastHorizon, setForecastHorizon] = useState(60)
+  const [whatIfView, setWhatIfView] = useState('AFTER')
   const [selectedFeature, setSelectedFeature] = useState(null)
   const [mapReady, setMapReady]   = useState(false)
   const [mapStatus, setMapStatus] = useState('loading')
@@ -161,8 +162,8 @@ export function MumbaiMap({
         properties: {
           ...f.properties,
           ...p,
-          fill_color: p.fill_color || '#14B8A6',
-          border_color: p.border_color || '#14B8A6',
+          fill_color: p.fill_color || '#0D9488',
+          border_color: p.border_color || '#0D9488',
           display_pressure: p.display_pressure || p.pressure
         }
       }
@@ -182,8 +183,8 @@ export function MumbaiMap({
           ...f.properties,
           ...p,
           display_pressure: p.display_pressure || p.pressure,
-          fill_color: p.fill_color || '#14B8A6',
-          halo_opacity: p.display_pressure >= 85 ? 0.55 : p.display_pressure >= 60 ? 0.42 : 0.25
+          fill_color: p.fill_color || '#0D9488',
+          halo_opacity: p.display_pressure >= 85 ? 0.50 : p.display_pressure >= 60 ? 0.38 : 0.20
         }
       }
     })
@@ -198,13 +199,13 @@ export function MumbaiMap({
     trainMarkersRef.current = []
   }, [])
 
-  // Render Interactive Hotspot & Train DOM Markers
+  // Render Interactive Hotspot & Train DOM Markers (12-13px typography)
   const updateMapMarkers = useCallback((map) => {
     if (!map) return
     clearMarkers()
 
     // 1. Zone Hotspot Badges
-    const targetZones = processedZones.filter(z => z.display_pressure >= 60 || z.id === selectedZoneId)
+    const targetZones = processedZones.filter(z => z.display_pressure >= 55 || z.id === selectedZoneId)
     targetZones.forEach(zone => {
       if (!zone.lat || !zone.lng) return
 
@@ -212,22 +213,22 @@ export function MumbaiMap({
       const isSelected = selectedZoneId === zone.id
 
       const el = document.createElement('div')
-      el.className = 'group cursor-pointer select-none transition-transform hover:scale-110 active:scale-95'
+      el.className = 'group cursor-pointer select-none transition-transform hover:scale-105 active:scale-95'
       el.style.zIndex = isCritical ? '25' : '15'
 
       el.innerHTML = `
         <div class="relative flex flex-col items-center">
           ${isCritical ? `
-            <span class="absolute -top-1.5 -right-1.5 flex h-4 w-4">
+            <span class="absolute -top-1 -right-1 flex h-3.5 w-3.5">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-4 w-4 bg-red-600"></span>
+              <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-600"></span>
             </span>
           ` : ''}
-          <div class="px-2.5 py-1 rounded-card-sm shadow-elevated flex items-center gap-1.5 border text-[11px] font-extrabold transition-all ${
+          <div class="px-2.5 py-1 rounded-[8px] shadow-elevated flex items-center gap-1.5 border text-[12px] sm:text-[13px] font-bold transition-all ${
             isSelected ? 'ring-2 ring-navy scale-105' : ''
-          }" style="background-color: ${zone.fill_color}; color: #FFFFFF; border-color: ${zone.border_color};">
+          }" style="background-color: ${zone.fill_color}; color: #FFFFFF; border-color: rgba(255,255,255,0.7);">
             <span class="tracking-tight">${zone.name.split(' ')[0]}</span>
-            <span class="bg-black/30 px-1.5 py-0.5 rounded font-mono text-[10px]">${zone.display_pressure}%</span>
+            <span class="bg-black/25 px-1.5 py-0.5 rounded font-mono text-[11px] font-semibold">${zone.display_pressure}%</span>
           </div>
           <div class="w-2 h-2 rotate-45 -mt-1 shadow-sm" style="background-color: ${zone.fill_color};"></div>
         </div>
@@ -247,7 +248,7 @@ export function MumbaiMap({
       markersRef.current.push(marker)
     })
 
-    // 2. Train Fleet Badges (Local Rake Simulation)
+    // 2. Train Fleet Badges (Local 12-Car Rakes)
     if (activeMode === 'NETWORK' || activeMode === 'CURRENT' || activeMode === 'DISRUPTIONS') {
       const trains = mapData?.trains || crowdSimEngine.getState().trains
       trains.forEach(train => {
@@ -255,15 +256,15 @@ export function MumbaiMap({
 
         const cl = train.classification || classifyQuantity(train.occupancy || 1400, 2000)
         const tEl = document.createElement('div')
-        tEl.className = 'group cursor-pointer select-none transition-transform hover:scale-125'
+        tEl.className = 'group cursor-pointer select-none transition-transform hover:scale-110'
         tEl.style.zIndex = '30'
 
         tEl.innerHTML = `
-          <div class="flex items-center gap-1 px-1.5 py-0.5 rounded shadow-md border text-[10px] font-extrabold text-white" style="background-color: ${cl.color}; border-color: #FFFFFF;">
-            <svg class="w-3 h-3 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] shadow-sm border text-[11px] font-bold text-white" style="background-color: ${cl.color}; border-color: #FFFFFF;">
+            <svg class="w-3.5 h-3.5 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 10h16M4 14h16M4 18h16M6 6v12M18 6v12" />
             </svg>
-            <span class="font-mono text-[9px]">${cl.pct}%</span>
+            <span class="font-mono text-[10.5px]">${cl.pct}%</span>
           </div>
         `
 
@@ -312,9 +313,9 @@ export function MumbaiMap({
             paint: {
               'fill-color': [
                 'interpolate', ['linear'], ['get', 'display_pressure'],
-                0,  '#14B8A6',
+                0,  '#0D9488',
                 40, '#2563EB',
-                60, '#F59E0B',
+                60, '#D97706',
                 75, '#F97316',
                 85, '#DC2626'
               ],
@@ -336,7 +337,7 @@ export function MumbaiMap({
             source: 'pravaah-zones-src',
             paint: {
               'fill-color': ['get', 'fill_color'],
-              'fill-opacity': 0.22
+              'fill-opacity': 0.18
             }
           })
           map.addLayer({
@@ -345,8 +346,8 @@ export function MumbaiMap({
             source: 'pravaah-zones-src',
             paint: {
               'line-color': ['get', 'border_color'],
-              'line-width': 2.2,
-              'line-opacity': 0.90
+              'line-width': 2.0,
+              'line-opacity': 0.85
             }
           })
           map.on('click', 'pravaah-zones-fill', (e) => {
@@ -371,14 +372,14 @@ export function MumbaiMap({
             source: 'pravaah-transit-src',
             paint: {
               'line-color': ['get', 'color'],
-              'line-width': activeMode === 'NETWORK' ? 6.5 : 3.5,
-              'line-opacity': 0.90
+              'line-width': activeMode === 'NETWORK' ? 5.5 : 3.0,
+              'line-opacity': 0.85
             }
           })
         }
       }
 
-      // 4. Crowd Flow Vectors (Directional Animated Lines)
+      // 4. Crowd Flow Vectors
       if (mapData?.geojson?.flows) {
         if (map.getSource('pravaah-flows-src')) {
           map.getSource('pravaah-flows-src').setData(mapData.geojson.flows)
@@ -390,8 +391,8 @@ export function MumbaiMap({
             source: 'pravaah-flows-src',
             paint: {
               'line-color': '#FFFFFF',
-              'line-width': 7.5,
-              'line-opacity': 0.85
+              'line-width': 6.5,
+              'line-opacity': 0.80
             }
           })
           map.addLayer({
@@ -401,22 +402,22 @@ export function MumbaiMap({
             paint: {
               'line-width': [
                 'interpolate', ['linear'], ['get', 'load_pct'],
-                0, 3.5,
-                40, 4.5,
-                60, 5.5,
-                75, 7.0,
-                85, 8.5
+                0, 3.0,
+                40, 4.0,
+                60, 5.0,
+                75, 6.5,
+                85, 8.0
               ],
               'line-color': [
                 'step', ['get', 'load_pct'],
-                '#14B8A6',
+                '#0D9488',
                 20, '#2563EB',
-                40, '#F59E0B',
+                40, '#D97706',
                 60, '#F97316',
                 85, '#DC2626'
               ],
               'line-dasharray': [3, 2],
-              'line-opacity': 0.95
+              'line-opacity': 0.90
             }
           })
         }
@@ -434,7 +435,7 @@ export function MumbaiMap({
             source: 'pravaah-disruptions-src',
             paint: {
               'line-color': '#DC2626',
-              'line-width': 8.5,
+              'line-width': 7.5,
               'line-dasharray': [2, 2],
               'line-opacity': 0.95
             }
@@ -453,8 +454,8 @@ export function MumbaiMap({
             type: 'line',
             source: 'pravaah-intervention-src',
             paint: {
-              'line-color': '#14B8A6',
-              'line-width': 7.5,
+              'line-color': '#0D9488',
+              'line-width': 6.5,
               'line-dasharray': [3, 2],
               'line-opacity': 0.95
             }
@@ -462,7 +463,7 @@ export function MumbaiMap({
         }
       }
 
-      // 7. Explicit Visibility Matrix
+      // 7. Visibility Matrix
       const setVis = (layerId, isVisible) => {
         if (map.getLayer(layerId)) {
           map.setLayoutProperty(layerId, 'visibility', isVisible ? 'visible' : 'none')
@@ -484,14 +485,14 @@ export function MumbaiMap({
       setVis('pravaah-intervention-line', showInterv)
 
       if (map.getLayer('pravaah-transit-line')) {
-        map.setPaintProperty('pravaah-transit-line', 'line-width', activeMode === 'NETWORK' ? 6.5 : 3.5)
+        map.setPaintProperty('pravaah-transit-line', 'line-width', activeMode === 'NETWORK' ? 5.5 : 3.0)
       }
 
-      // 60 FPS Flow Animation Loop
+      // Smooth Flow Animation Loop
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current)
       let dashOffset = 0
       const animateFlow = () => {
-        dashOffset = (dashOffset - 0.35) % 100
+        dashOffset = (dashOffset - 0.3) % 100
         if (map && map.getLayer('pravaah-flows-line')) {
           try { map.setPaintProperty('pravaah-flows-line', 'line-dashoffset', dashOffset) } catch (_) {}
         }
@@ -509,7 +510,7 @@ export function MumbaiMap({
       updateMapMarkers(map)
 
     } catch (err) {
-      console.error('[MAP ERROR] Layer sync failed:', err)
+      console.error('[PRAVAAH Map] Layer sync error:', err)
     }
   }, [halosGeoJSON, zonesGeoJSON, mapData, activeMode, whatIfView, updateMapMarkers, onSelectZone])
 
@@ -549,7 +550,7 @@ export function MumbaiMap({
           if (map.isStyleLoaded()) handleReady()
           else setMapStatus('ready')
         }
-      }, 800)
+      }, 700)
 
       mapInstanceRef.current = map
 
@@ -593,88 +594,88 @@ export function MumbaiMap({
     if (!mapInstanceRef.current) return
     setSelectedFeature({ type: 'zone', properties: zone })
     if (onSelectZone) onSelectZone(zone)
-    mapInstanceRef.current.easeTo({ center: [zone.lng, zone.lat], zoom: 13.0, duration: 500 })
+    mapInstanceRef.current.easeTo({ center: [zone.lng, zone.lat], zoom: 13.0, duration: 450 })
   }
 
   return (
     <div
-      className={`relative w-full rounded-card overflow-hidden border border-border bg-surface-muted/20 flex flex-col ${className}`}
-      style={{ minHeight: '460px', ...style }}
+      className={`relative w-full rounded-[14px] overflow-hidden border border-border bg-surface-muted flex flex-col ${className}`}
+      style={{ minHeight: '480px', ...style }}
       role="region"
-      aria-label="PRAVAAH Live Crowd Flow & Saturation Canvas"
+      aria-label="PRAVAAH Live Crowd Flow & Saturation Map"
     >
-      {/* Top Intelligence Mode Switcher */}
-      <div className="absolute top-3 left-3 right-14 sm:right-auto z-10 flex flex-wrap items-center gap-1 bg-surface/95 backdrop-blur-md p-1.5 rounded-card border border-border shadow-subtle">
+      {/* Top Operations Toolbar (13-14px) */}
+      <div className="absolute top-3.5 left-3.5 right-14 sm:right-auto z-10 flex flex-wrap items-center gap-1.5 bg-white/95 backdrop-blur-sm p-1.5 rounded-[10px] border border-border shadow-subtle">
         <button
           onClick={() => setActiveMode('CURRENT')}
-          className={`px-2.5 py-1 rounded-card-sm text-xs font-bold transition-all flex items-center gap-1.5 ${
-            activeMode === 'CURRENT' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted'
+          className={`px-3 py-1.5 rounded-[7px] text-[13px] font-semibold transition-all flex items-center gap-1.5 ${
+            activeMode === 'CURRENT' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary'
           }`}
         >
-          <Activity className="w-3.5 h-3.5 text-teal" />
+          <Activity className="w-4 h-4 text-teal" />
           <span>Current Flow</span>
         </button>
 
         <button
           onClick={() => setActiveMode('FORECAST')}
-          className={`px-2.5 py-1 rounded-card-sm text-xs font-bold transition-all flex items-center gap-1.5 ${
-            activeMode === 'FORECAST' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted'
+          className={`px-3 py-1.5 rounded-[7px] text-[13px] font-semibold transition-all flex items-center gap-1.5 ${
+            activeMode === 'FORECAST' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary'
           }`}
         >
-          <TrendingUp className="w-3.5 h-3.5 text-orange" />
+          <TrendingUp className="w-4 h-4 text-orange" />
           <span>Forecast</span>
         </button>
 
         <button
           onClick={() => setActiveMode('NETWORK')}
-          className={`px-2.5 py-1 rounded-card-sm text-xs font-bold transition-all flex items-center gap-1.5 ${
-            activeMode === 'NETWORK' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted'
+          className={`px-3 py-1.5 rounded-[7px] text-[13px] font-semibold transition-all flex items-center gap-1.5 ${
+            activeMode === 'NETWORK' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary'
           }`}
         >
-          <Train className="w-3.5 h-3.5 text-brand-blue" />
+          <Train className="w-4 h-4 text-blue" />
           <span>Network & Trains</span>
         </button>
 
         <button
           onClick={() => setActiveMode('DISRUPTIONS')}
-          className={`px-2.5 py-1 rounded-card-sm text-xs font-bold transition-all flex items-center gap-1.5 ${
-            activeMode === 'DISRUPTIONS' ? 'bg-critical text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted'
+          className={`px-3 py-1.5 rounded-[7px] text-[13px] font-semibold transition-all flex items-center gap-1.5 ${
+            activeMode === 'DISRUPTIONS' ? 'bg-critical text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary'
           }`}
         >
-          <AlertTriangle className="w-3.5 h-3.5 text-warning" />
+          <AlertTriangle className="w-4 h-4 text-warning-border" />
           <span>Disruptions</span>
         </button>
 
         <button
           onClick={() => setActiveMode('INTERVENTION')}
-          className={`px-2.5 py-1 rounded-card-sm text-xs font-bold transition-all flex items-center gap-1.5 ${
-            activeMode === 'INTERVENTION' ? 'bg-brand-blue text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted'
+          className={`px-3 py-1.5 rounded-[7px] text-[13px] font-semibold transition-all flex items-center gap-1.5 ${
+            activeMode === 'INTERVENTION' ? 'bg-orange text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary'
           }`}
         >
-          <Zap className="w-3.5 h-3.5 text-orange" />
-          <span>Action</span>
+          <Zap className="w-4 h-4 text-white" />
+          <span>Action Flow</span>
         </button>
 
         <button
           onClick={() => setActiveMode('WHAT_IF')}
-          className={`px-2.5 py-1 rounded-card-sm text-xs font-bold transition-all flex items-center gap-1.5 ${
-            activeMode === 'WHAT_IF' ? 'bg-teal text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted'
+          className={`px-3 py-1.5 rounded-[7px] text-[13px] font-semibold transition-all flex items-center gap-1.5 ${
+            activeMode === 'WHAT_IF' ? 'bg-teal text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted hover:text-text-primary'
           }`}
         >
-          <Sparkles className="w-3.5 h-3.5 text-orange" />
+          <Sparkles className="w-4 h-4 text-white" />
           <span>What-If</span>
         </button>
       </div>
 
       {/* Sub-Controls: Forecast Horizon */}
       {activeMode === 'FORECAST' && (
-        <div className="absolute top-15 sm:top-14 left-3 z-10 flex items-center gap-1 bg-surface/95 backdrop-blur-md px-2.5 py-1 rounded-card border border-border shadow-subtle text-xs">
-          <span className="text-[10px] uppercase font-bold text-text-muted mr-1">Forecast Horizon:</span>
+        <div className="absolute top-16 left-3.5 z-10 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-[8px] border border-border shadow-subtle text-[13px]">
+          <span className="text-[12px] font-semibold text-text-muted mr-1">Forecast Horizon:</span>
           {[30, 60, 120, 180].map(h => (
             <button
               key={h}
               onClick={() => setForecastHorizon(h)}
-              className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
+              className={`px-2.5 py-0.5 rounded-[6px] text-[12px] sm:text-[13px] font-semibold transition-all ${
                 forecastHorizon === h ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-muted'
               }`}
             >
@@ -686,10 +687,10 @@ export function MumbaiMap({
 
       {/* Sub-Controls: What-If Selector */}
       {activeMode === 'WHAT_IF' && (
-        <div className="absolute top-15 sm:top-14 left-3 z-10 flex items-center gap-1.5 bg-surface/95 backdrop-blur-md p-1 rounded-card border border-border shadow-subtle text-xs">
+        <div className="absolute top-16 left-3.5 z-10 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm p-1 rounded-[8px] border border-border shadow-subtle text-[13px]">
           <button
             onClick={() => setWhatIfView('BEFORE')}
-            className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+            className={`px-3 py-1 rounded-[6px] text-[12px] sm:text-[13px] font-semibold transition-all ${
               whatIfView === 'BEFORE' ? 'bg-critical text-white' : 'text-text-secondary hover:bg-surface-muted'
             }`}
           >
@@ -697,7 +698,7 @@ export function MumbaiMap({
           </button>
           <button
             onClick={() => setWhatIfView('AFTER')}
-            className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+            className={`px-3 py-1 rounded-[6px] text-[12px] sm:text-[13px] font-semibold transition-all ${
               whatIfView === 'AFTER' ? 'bg-teal text-white shadow-sm' : 'text-text-secondary hover:bg-surface-muted'
             }`}
           >
@@ -706,20 +707,20 @@ export function MumbaiMap({
         </div>
       )}
 
-      {/* Top Hotspots Bar */}
+      {/* Top Hotspots Bar (12-13px) */}
       {mapData?.hotspots && mapData.hotspots.length > 0 && (
-        <div className="absolute top-15 sm:top-14 right-3 z-10 hidden sm:flex items-center gap-1 bg-surface/95 backdrop-blur-md p-1 rounded-card border border-border shadow-subtle text-[11px]">
-          <span className="text-[9.5px] uppercase font-bold text-text-muted px-1.5 flex items-center gap-1">
-            <Flame className="w-3 h-3 text-critical" /> Hotspots:
+        <div className="absolute top-16 right-3.5 z-10 hidden sm:flex items-center gap-1.5 bg-white/95 backdrop-blur-sm p-1 rounded-[8px] border border-border shadow-subtle text-[13px]">
+          <span className="text-[12px] font-semibold text-text-muted px-1.5 flex items-center gap-1">
+            <Flame className="w-3.5 h-3.5 text-critical" /> Hotspots:
           </span>
           {mapData.hotspots.slice(0, 3).map(h => (
             <button
               key={h.id}
               onClick={() => handleFocusHotspot(h)}
-              className="px-2 py-0.5 rounded bg-surface-muted/80 hover:bg-surface-muted border border-border/60 font-semibold text-text-primary hover:border-terracotta transition-colors flex items-center gap-1"
+              className="px-2 py-0.5 rounded-[6px] bg-surface-muted hover:bg-surface-subtle border border-border font-semibold text-text-primary hover:border-orange transition-colors flex items-center gap-1"
             >
               <span>{h.name.split(' ')[0]}</span>
-              <span className="font-mono text-[10px] text-critical font-bold">{h.pressure}%</span>
+              <span className="font-mono text-[12px] text-critical font-bold">{h.pressure}%</span>
             </button>
           ))}
         </div>
@@ -727,60 +728,30 @@ export function MumbaiMap({
 
       {/* Bottleneck Callout */}
       {activeMode === 'CURRENT' && mapData?.bottlenecks && mapData.bottlenecks.length > 0 && (
-        <div className="absolute bottom-16 sm:bottom-3 right-3 z-10 max-w-[280px] bg-surface/95 backdrop-blur-md border border-critical/40 rounded-card p-2.5 shadow-elevated space-y-1">
-          <div className="flex items-center gap-1.5 text-critical font-bold text-[10.5px] uppercase tracking-wider">
-            <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+        <div className="absolute bottom-16 sm:bottom-3.5 right-3.5 z-10 max-w-[320px] bg-white/95 backdrop-blur-sm border border-critical/40 rounded-[10px] p-3.5 shadow-elevated space-y-1.5">
+          <div className="flex items-center gap-1.5 text-critical font-bold text-[12px] uppercase tracking-wider">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             <span>Active Network Bottleneck</span>
           </div>
-          <p className="text-[11.5px] font-semibold text-text-primary leading-tight">
+          <p className="text-[13.5px] font-semibold text-text-primary leading-snug">
             {mapData.bottlenecks[0].corridor}
           </p>
-          <div className="flex items-center justify-between text-[10.5px] text-text-secondary pt-0.5 border-t border-border/50">
-            <span>Throughput Load: <strong className="text-critical">{mapData.bottlenecks[0].load_pct}%</strong></span>
-            <span className="text-text-muted">Heavy Inflow</span>
+          <div className="flex items-center justify-between text-[12px] text-text-secondary pt-1 border-t border-border/60">
+            <span>Throughput: <strong className="text-critical font-bold">{mapData.bottlenecks[0].load_pct}% Load</strong></span>
+            <span className="text-text-muted font-medium">High Inflow</span>
           </div>
-        </div>
-      )}
-
-      {/* Intervention Callout */}
-      {(activeMode === 'INTERVENTION' || activeMode === 'WHAT_IF') && mapData?.recommendation && (
-        <div className="absolute bottom-16 sm:bottom-3 right-3 z-10 max-w-[300px] bg-surface/95 backdrop-blur-md border border-brand-blue/40 rounded-card p-3 shadow-elevated space-y-1.5">
-          <div className="flex items-center gap-1.5 text-brand-blue font-extrabold text-[10.5px] uppercase tracking-wider">
-            <Zap className="w-3.5 h-3.5 flex-shrink-0 text-orange" />
-            <span>PRAVAAH Recommended Flow</span>
-          </div>
-          <p className="text-xs font-bold text-text-primary leading-snug">
-            Redirect {mapData.recommendation.dosage_pct}% flow: {mapData.recommendation.source_name} &rarr; {mapData.recommendation.destination_name} Buffer
-          </p>
-          <div className="flex items-center justify-between text-[11px] pt-1 border-t border-border/60">
-            <span className="text-teal font-bold">Reduction: -{mapData.recommendation.reduction} pts</span>
-            <span className="text-text-muted">Buffer load: +{mapData.recommendation.side_effect_increase} pts</span>
-          </div>
-        </div>
-      )}
-
-      {/* Disruption Callout */}
-      {activeMode === 'DISRUPTIONS' && (
-        <div className="absolute bottom-16 sm:bottom-3 right-3 z-10 max-w-[290px] bg-critical-bg border border-critical/40 rounded-card p-3 shadow-elevated space-y-1">
-          <div className="flex items-center gap-1.5 text-critical font-bold text-[10.5px] uppercase tracking-wider">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-            <span>Corridor Blockage Active</span>
-          </div>
-          <p className="text-xs text-text-primary leading-snug">
-            Central Railway Mainline (Parel &ndash; Curry Road) throughput constrained to 0 pass/hr. Local trains halting/reversing.
-          </p>
         </div>
       )}
 
       {/* MapLibre Canvas */}
       <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
 
-      {/* Fast Loading Overlay */}
+      {/* Loading Overlay */}
       {mapStatus === 'loading' && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-navy-dark/80 backdrop-blur-[1px]">
-          <div className="w-7 h-7 border-2 border-orange border-t-transparent rounded-full animate-spin mb-2.5" />
-          <span className="text-[11px] font-bold text-white uppercase tracking-widest">
-            Loading Mumbai Crowd Flow Map
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-navy/80 backdrop-blur-sm">
+          <div className="w-8 h-8 border-2 border-orange border-t-transparent rounded-full animate-spin mb-3" />
+          <span className="text-[13px] font-semibold text-white tracking-wide">
+            Loading Mumbai Geography & Overlays...
           </span>
         </div>
       )}
@@ -796,7 +767,7 @@ export function MumbaiMap({
         </div>
       )}
 
-      {/* Dynamic Map Legend */}
+      {/* Map Legend */}
       {mapStatus === 'ready' && (
         <MapLegend 
           mode={activeMode} 

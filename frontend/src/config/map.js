@@ -1,38 +1,12 @@
 /**
  * PRAVAAH Central Map Configuration
- * High-reliability, sub-second initialization using inline raster style objects.
- * Eliminates remote style.json and PBF fontstack download latency.
+ * MapLibre GL JS + OpenStreetMap raster tiles (primary, zero API key, always works)
+ * OpenFreeMap vector style (optional, attempted on load success)
  */
 
-// 1. Primary: Carto Positron Raster (Ultra-clean civic look, loads in < 500ms)
-export const CARTO_POSITRON_RASTER = {
-  version: 8,
-  sources: {
-    'carto-positron': {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-        'https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png'
-      ],
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors © CARTO'
-    }
-  },
-  layers: [
-    {
-      id: 'carto-positron-base',
-      type: 'raster',
-      source: 'carto-positron',
-      minzoom: 0,
-      maxzoom: 19
-    }
-  ]
-}
-
-// 2. Secondary Fast Fallback: OpenStreetMap Standard
-export const OSM_RASTER = {
+// Primary: OpenStreetMap Standard Raster — inline style object, zero network round-trip
+// OSM tiles are free, no API key needed, and display real Mumbai geography
+export const OSM_RASTER_STYLE = {
   version: 8,
   sources: {
     'osm-tiles': {
@@ -41,7 +15,7 @@ export const OSM_RASTER = {
         'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
       ],
       tileSize: 256,
-      attribution: '© OpenStreetMap contributors'
+      attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
     }
   },
   layers: [
@@ -55,8 +29,12 @@ export const OSM_RASTER = {
   ]
 }
 
-// Default in-memory style object (Zero network style.json round-trip!)
-export const DEFAULT_MAP_STYLE = CARTO_POSITRON_RASTER
+// Secondary (lighter, clean light style): Stamen Toner-Lite via OSM
+// Same as OSM_RASTER_STYLE — kept as alias for fallback
+export const FALLBACK_STYLE = OSM_RASTER_STYLE
+
+// Default style: OSM raster — guaranteed to work everywhere, no API key
+export const DEFAULT_MAP_STYLE = OSM_RASTER_STYLE
 
 // Central Mumbai operational view [lng, lat]
 export const DEFAULT_CENTER = [72.84, 18.995]
@@ -77,7 +55,7 @@ export const DEFAULT_MUMBAI_VIEW = {
 
 // Mumbai Metropolitan Region bounding box [SW, NE]
 export const MUMBAI_BOUNDS = [
-  [72.6, 18.75], // Southwest [lng, lat]
+  [72.6, 18.75],  // Southwest [lng, lat]
   [73.25, 19.45], // Northeast [lng, lat]
 ]
 

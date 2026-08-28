@@ -16,8 +16,8 @@ export default function Header({ onOpenMobileNav }) {
         </button>
         <div className="flex items-center gap-2">
           {/* PRAVAAH wordmark on mobile */}
-          <span className="lg:hidden font-bold text-sm tracking-tight text-white">PRAVAAH</span>
-          <span className="hidden sm:inline text-[10px] font-bold text-white/40 uppercase tracking-[0.18em]">
+          <span className="lg:hidden font-bold text-[15px] tracking-tight text-white">PRAVAAH</span>
+          <span className="hidden sm:inline text-[12px] font-bold text-white/50 uppercase tracking-wider">
             Control Room
           </span>
         </div>
@@ -25,10 +25,10 @@ export default function Header({ onOpenMobileNav }) {
 
       {/* Center: Event name + day/period */}
       <div className="flex flex-col items-center justify-center text-center absolute left-1/2 -translate-x-1/2">
-        <h1 className="text-[13px] sm:text-[14px] font-semibold text-white leading-tight truncate max-w-[180px] sm:max-w-[320px]">
+        <h1 className="text-[14px] sm:text-[16px] font-semibold text-white leading-tight truncate max-w-[200px] sm:max-w-[340px]">
           {EVENT_INFO.name}
         </h1>
-        <span className="text-[11px] text-white/55 leading-tight">
+        <span className="text-[12px] text-white/70 leading-tight mt-0.5">
           {EVENT_INFO.day} &middot; {EVENT_INFO.period}
         </span>
       </div>
@@ -39,8 +39,8 @@ export default function Header({ onOpenMobileNav }) {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal opacity-60" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-teal" />
         </span>
-        <span className="text-[11px] font-bold text-white tracking-wider uppercase">LIVE</span>
-        <span className="hidden md:inline text-[11px] text-white/40">Telemetry</span>
+        <span className="text-[12px] font-bold text-white tracking-wider uppercase">LIVE</span>
+        <span className="hidden md:inline text-[12px] text-white/60">Telemetry</span>
       </div>
     </header>
   )
