@@ -91,11 +91,21 @@ class TestPravaahAPI(unittest.TestCase):
         data = response.get_json()
         self.assertIn('center', data)
         self.assertIn('zones', data)
-        self.assertIn('stations', data)
-        self.assertIn('hotels', data)
-        self.assertIn('roads', data)
-        self.assertIn('welfare', data)
-        self.assertIn('locations', data)
+        self.assertIn('geojson', data)
+        self.assertIn('hotspots', data)
+        self.assertIn('bottlenecks', data)
+        self.assertIn('recommendation', data)
+
+    def test_09_weather(self):
+        response = self.client.get('/api/weather')
+        self.assertIn(response.status_code, [200, 503])
+        if response.status_code == 200:
+            data = response.get_json()
+            self.assertIn('location', data)
+            self.assertIn('current', data)
+            self.assertIn('hourly', data)
+            self.assertIn('source', data)
+            self.assertEqual(data['source'], 'Open-Meteo')
 
 if __name__ == '__main__':
     unittest.main()

@@ -22,6 +22,7 @@ from routes.scenarios import scenarios_bp
 from routes.explainability import explainability_bp
 from routes.visitor import visitor_bp
 from routes.privacy import privacy_bp
+from routes.weather import weather_bp
 
 logging.basicConfig(
     level=logging.INFO if Config.ENV == 'production' else logging.INFO,
@@ -91,6 +92,7 @@ def create_app():
     app.register_blueprint(explainability_bp)
     app.register_blueprint(visitor_bp)
     app.register_blueprint(privacy_bp)
+    app.register_blueprint(weather_bp)
 
     return app
 

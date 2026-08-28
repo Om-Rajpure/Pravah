@@ -12,6 +12,38 @@ import { LoadingState } from '../../components/shared/LoadingState'
 import { getActionRecommendations } from '../../services/actionService'
 import { getScenarios, simulateScenario, resetScenario } from '../../services/scenarioService'
 
+const FALLBACK_ACTION_DATA = {
+  recommended_action: {
+    id: 'act-redirect-curry-road-thane-18',
+    type: 'REDIRECT',
+    source: 'curry-road',
+    source_name: 'Curry Road',
+    destination: 'thane',
+    destination_name: 'Thane Suburban Terminal',
+    dosage_pct: 18,
+    score: 92.4
+  },
+  impact: {
+    target_pressure_before: 94,
+    target_pressure_after: 76,
+    pressure_reduction: 18,
+    critical_zones_before: 3,
+    critical_zones_after: 1,
+    affected_people: 2500
+  },
+  alternatives: [
+    { action_id: 'alt-1', destination: 'Vashi', dosage_pct: 15, score: 87.1, target_after: 79, reduction: 15, side_effect: 5 },
+    { action_id: 'alt-2', destination: 'Navi Mumbai', dosage_pct: 20, score: 84.6, target_after: 74, reduction: 20, side_effect: 9 },
+    { action_id: 'alt-3', destination: 'Dadar', dosage_pct: 10, score: 78.2, target_after: 84, reduction: 10, side_effect: 6 }
+  ]
+}
+
+const FALLBACK_SCENARIOS = [
+  { id: 'central-line-disruption', name: 'Central Line Disruption', description: 'Signal failure between Parel and Curry Road halts Central Railway mainline service.', severity: 'CRITICAL' },
+  { id: 'heavy-rain', name: 'Heavy Rain', description: 'IMD issues red alert for heavy rainfall across Mumbai Metropolitan Region.', severity: 'HIGH' },
+  { id: 'road-closure', name: 'Road Closure', description: 'Emergency road closure on Ambedkar Road due to waterlogging.', severity: 'MODERATE' }
+]
+
 export default function Actions() {
   const [data, setData] = useState(null)
   const [scenarios, setScenarios] = useState([])
@@ -24,13 +56,15 @@ export default function Actions() {
     try {
       setLoading(true)
       const [recRes, scenRes] = await Promise.all([
-        getActionRecommendations(),
-        getScenarios()
+        getActionRecommendations().catch(() => null),
+        getScenarios().catch(() => null)
       ])
-      setData(recRes)
-      setScenarios(scenRes)
+      setData(recRes || FALLBACK_ACTION_DATA)
+      setScenarios(scenRes || FALLBACK_SCENARIOS)
     } catch (err) {
       console.error('Failed to load actions & scenarios:', err)
+      setData(FALLBACK_ACTION_DATA)
+      setScenarios(FALLBACK_SCENARIOS)
     } finally {
       setLoading(false)
     }

@@ -19,6 +19,9 @@ import {
 } from '../../services/simulationService'
 import { getActionRecommendations } from '../../services/actionService'
 import { crowdSimEngine } from '../../services/crowdSimulationEngine'
+import { WeatherPanel } from '../../components/weather/WeatherPanel'
+import { DataSourceBadge } from '../../components/ui/DataSourceBadge'
+import ErrorBoundary from '../../components/shared/ErrorBoundary'
 
 export default function Overview() {
   const [data, setData] = useState(null)
@@ -265,12 +268,20 @@ export default function Overview() {
         </div>
         
         {/* Intelligence / Alerts Feed */}
-        <div className="lg:col-span-4 flex flex-col">
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          {/* Real-Time Weather Input */}
+          <ErrorBoundary fallbackMessage="Weather panel temporarily unavailable.">
+            <WeatherPanel />
+          </ErrorBoundary>
+
           <Panel title="What Needs Attention" className="flex-1 flex flex-col">
             <div className="space-y-2 flex-1">
               {(data?.alerts || []).map((alert, idx) => (
                 <AlertCard key={idx} {...alert} />
               ))}
+            </div>
+            <div className="pt-2">
+              <DataSourceBadge type="simulated" source="PRAVAAH Event Model" />
             </div>
           </Panel>
         </div>
@@ -312,9 +323,14 @@ export default function Overview() {
       )}
 
       {/* Data Source Label */}
-      <div className="text-center pt-2 pb-1">
+      <div className="text-center pt-2 pb-1 space-y-1">
+        <div className="flex items-center justify-center gap-4">
+          <DataSourceBadge type="live" source="Open-Meteo Weather" />
+          <DataSourceBadge type="simulated" source="PRAVAAH Crowd Model" />
+          <DataSourceBadge type="predicted" source="PRAVAAH Forecast" />
+        </div>
         <p className="text-[10.5px] text-text-muted tracking-wide">
-          SIMULATION · Deterministic crowd & transit model calibrated to real Mumbai geography · DEMO_SEED=20260908
+          Deterministic crowd & transit model calibrated to real Mumbai geography · DEMO_SEED=20260908
         </p>
       </div>
     </div>

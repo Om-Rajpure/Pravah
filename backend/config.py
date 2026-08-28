@@ -24,7 +24,8 @@ class Config:
     _raw_cors = os.environ.get(
         'CORS_ORIGINS',
         'http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,'
-        'https://pravah-git-main-omrajpure3-8253s-projects.vercel.app'
+        'https://pravah-git-main-omrajpure3-8253s-projects.vercel.app,'
+        'https://pravah-lake.vercel.app'
     )
     CORS_ORIGINS = [origin.strip() for origin in _raw_cors.split(',') if origin.strip()]
     
@@ -46,6 +47,12 @@ class Config:
         'time': '18:00',
         'city': 'Mumbai'
     }
+
+    # Weather Integration
+    WEATHER_LAT = 19.0760
+    WEATHER_LON = 72.8777
+    WEATHER_TIMEZONE = 'Asia/Kolkata'
+    WEATHER_CACHE_TTL = 600  # 10 minutes
 
     # Crowd Simulation Engine Configuration
     SIMULATION_START_TIME = "18:00"

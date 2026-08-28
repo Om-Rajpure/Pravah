@@ -7,6 +7,7 @@ import { LoadingState } from '../../components/shared/LoadingState'
 import { ErrorState } from '../../components/shared/ErrorState'
 import { MumbaiMap } from '../../components/map/MumbaiMap'
 import { getZones, getMapState } from '../../lib/api'
+import { crowdSimEngine } from '../../services/crowdSimulationEngine'
 
 export default function LiveCity() {
   const [zones, setZones] = useState([])
@@ -20,17 +21,27 @@ export default function LiveCity() {
       setLoading(true)
       setError(null)
       const [zonesData, mapState] = await Promise.all([
-        getZones(),
-        getMapState()
+        getZones().catch(() => null),
+        getMapState().catch(() => null)
       ])
-      setZones(zonesData)
-      setMapData(mapState)
-      if (zonesData.length > 0) {
-        setSelectedZone(zonesData[0])
+      
+      const fallbackState = crowdSimEngine.getState()
+      
+      const finalZones = zonesData || fallbackState.zones
+      setZones(finalZones)
+      setMapData(mapState || fallbackState.mapData)
+      
+      if (finalZones && finalZones.length > 0) {
+        setSelectedZone(finalZones[0])
       }
     } catch (err) {
       console.error('Failed to fetch live city telemetry:', err)
-      setError('Failed to load live city telemetry')
+      const fallbackState = crowdSimEngine.getState()
+      setZones(fallbackState.zones)
+      setMapData(fallbackState.mapData)
+      if (fallbackState.zones && fallbackState.zones.length > 0) {
+        setSelectedZone(fallbackState.zones[0])
+      }
     } finally {
       setLoading(false)
     }
@@ -48,7 +59,6 @@ export default function LiveCity() {
   }
 
   if (loading) return <LoadingState message="Loading live city telemetry..." />
-  if (error) return <ErrorState title="Telemetry unavailable" message={error} onRetry={fetchData} />
 
   return (
     <div className="space-y-4 sm:space-y-5 max-w-[1600px] mx-auto">

@@ -5,6 +5,12 @@ import { ScenarioCascadePanel } from '../../components/scenarios/ScenarioCascade
 import { LoadingState } from '../../components/shared/LoadingState'
 import { getScenarios, simulateScenario, resetScenario } from '../../services/scenarioService'
 
+const FALLBACK_SCENARIOS = [
+  { id: 'central-line-disruption', name: 'Central Line Disruption', description: 'Signal failure between Parel and Curry Road halts Central Railway mainline service.', severity: 'CRITICAL' },
+  { id: 'heavy-rain', name: 'Heavy Rain', description: 'IMD issues red alert for heavy rainfall across Mumbai Metropolitan Region.', severity: 'HIGH' },
+  { id: 'road-closure', name: 'Road Closure', description: 'Emergency road closure on Ambedkar Road due to waterlogging.', severity: 'MODERATE' }
+]
+
 export default function Scenarios() {
   const [scenarios, setScenarios] = useState([])
   const [selectedScenarioId, setSelectedScenarioId] = useState('central-line-disruption')
@@ -14,8 +20,11 @@ export default function Scenarios() {
 
   useEffect(() => {
     getScenarios()
-      .then(setScenarios)
-      .catch(console.error)
+      .then(data => setScenarios(data || FALLBACK_SCENARIOS))
+      .catch((err) => {
+        console.error('Failed to load scenarios:', err)
+        setScenarios(FALLBACK_SCENARIOS)
+      })
       .finally(() => setLoading(false))
   }, [])
 

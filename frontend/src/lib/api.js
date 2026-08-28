@@ -31,5 +31,19 @@ export const getHotels = () => api.get('/hotels').then(r => r.data)
 export const getTransport = () => api.get('/transport').then(r => r.data)
 export const getMapState = () => api.get('/map/state').then(r => r.data)
 export const getWelfare = () => api.get('/welfare').then(r => r.data)
+export const getWeather = () => api.get('/weather').then(r => r.data)
+
+/**
+ * Check if the backend API is reachable.
+ * Returns true if healthy, false otherwise.
+ */
+export async function isBackendReachable() {
+  try {
+    await api.get('/health', { timeout: 5000 })
+    return true
+  } catch {
+    return false
+  }
+}
 
 export default api
