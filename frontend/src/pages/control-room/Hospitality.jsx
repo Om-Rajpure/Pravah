@@ -140,29 +140,30 @@ export default function Hospitality() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
-              {clusters?.map((hotel) => {
-                const isHighOcc = hotel.occupancy_rate >= 85
-                const isModerateOcc = hotel.occupancy_rate >= 60 && hotel.occupancy_rate < 85
+              {(Array.isArray(clusters) ? clusters : FALLBACK_HOSPITALITY.clusters).map((hotel) => {
+                const occ = hotel.occupancy_rate ?? 75
+                const isHighOcc = occ >= 85
+                const isModerateOcc = occ >= 60 && occ < 85
                 return (
                   <tr key={hotel.id} className="hover:bg-surface-muted/30 transition-colors">
                     <td className="py-2.5 px-3 font-medium text-text-primary">{hotel.name}</td>
-                    <td className="py-2.5 px-3 text-text-secondary capitalize">{hotel.zone_name}</td>
-                    <td className="py-2.5 px-3 text-right font-mono text-text-secondary">{hotel.total_rooms.toLocaleString()}</td>
-                    <td className="py-2.5 px-3 text-right font-mono font-semibold text-text-primary">{hotel.available_rooms.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-text-secondary capitalize">{hotel.zone_name || 'Central Mumbai'}</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-text-secondary">{(hotel.total_rooms ?? 0).toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-right font-mono font-semibold text-text-primary">{(hotel.available_rooms ?? 0).toLocaleString()}</td>
                     <td className="py-2.5 px-3">
                       <div className="flex items-center gap-2">
                         <div className="w-20 bg-surface-muted h-1.5 rounded-full overflow-hidden">
                           <div 
                             className={`h-full rounded-full ${isHighOcc ? 'bg-critical' : isModerateOcc ? 'bg-warning' : 'bg-low'}`} 
-                            style={{ width: `${hotel.occupancy_rate}%` }}
+                            style={{ width: `${occ}%` }}
                           ></div>
                         </div>
                         <span className={`text-[11px] font-semibold ${isHighOcc ? 'text-critical' : isModerateOcc ? 'text-warning' : 'text-low'}`}>
-                          {hotel.occupancy_rate}%
+                          {occ}%
                         </span>
                       </div>
                     </td>
-                    <td className="py-2.5 px-3 text-right font-mono text-text-primary">₹{hotel.price.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-right font-mono text-text-primary">₹{(hotel.price ?? 3500).toLocaleString()}</td>
                   </tr>
                 )
               })}

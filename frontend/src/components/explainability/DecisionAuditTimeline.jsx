@@ -17,7 +17,7 @@ export function DecisionAuditTimeline({ className = '' }) {
     try {
       setLoading(true)
       const data = await getAuditTrail(filterType).catch(() => null)
-      setEvents(data || FALLBACK_AUDIT_TRAIL)
+      setEvents(Array.isArray(data) ? data : FALLBACK_AUDIT_TRAIL)
     } catch (err) {
       console.error('Failed to load audit trail:', err)
       setEvents(FALLBACK_AUDIT_TRAIL)
@@ -44,6 +44,8 @@ export function DecisionAuditTimeline({ className = '' }) {
         return 'bg-low/10 text-low border-low/30'
     }
   }
+
+  const eventList = Array.isArray(events) ? events : FALLBACK_AUDIT_TRAIL
 
   return (
     <div className={`bg-surface border border-border rounded-card p-4 sm:p-5 shadow-subtle space-y-3.5 ${className}`}>
@@ -74,7 +76,7 @@ export function DecisionAuditTimeline({ className = '' }) {
 
       {/* Chronological Event Stream */}
       <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
-        {events.map((ev) => (
+        {eventList.map((ev) => (
           <div key={ev.event_id} className="bg-surface-muted/30 p-2.5 rounded-card-sm border border-border/70 text-xs space-y-1">
             <div className="flex items-center justify-between flex-wrap gap-1">
               <span className={`text-[9.5px] uppercase font-bold px-1.5 py-0.5 rounded border ${getEventBadge(ev.event_type)}`}>

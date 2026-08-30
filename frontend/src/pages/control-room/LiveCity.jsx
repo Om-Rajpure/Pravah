@@ -27,9 +27,9 @@ export default function LiveCity() {
       
       const fallbackState = crowdSimEngine.getState()
       
-      const finalZones = zonesData || fallbackState.zones
+      const finalZones = (Array.isArray(zonesData) && zonesData.length > 0) ? zonesData : (fallbackState.zones || [])
       setZones(finalZones)
-      setMapData(mapState || fallbackState.mapData)
+      setMapData(mapState || fallbackState)
       
       if (finalZones && finalZones.length > 0) {
         setSelectedZone(finalZones[0])
@@ -37,10 +37,11 @@ export default function LiveCity() {
     } catch (err) {
       console.error('Failed to fetch live city telemetry:', err)
       const fallbackState = crowdSimEngine.getState()
-      setZones(fallbackState.zones)
-      setMapData(fallbackState.mapData)
-      if (fallbackState.zones && fallbackState.zones.length > 0) {
-        setSelectedZone(fallbackState.zones[0])
+      const fallbackZones = fallbackState.zones || []
+      setZones(fallbackZones)
+      setMapData(fallbackState)
+      if (fallbackZones.length > 0) {
+        setSelectedZone(fallbackZones[0])
       }
     } finally {
       setLoading(false)
@@ -182,7 +183,7 @@ export default function LiveCity() {
                   </div>
                   <div className="flex justify-between py-1">
                     <span className="text-text-secondary">Coordinates:</span>
-                    <span className="font-mono text-text-muted text-[11px]">{selectedZone.lat.toFixed(4)}° N, {selectedZone.lng.toFixed(4)}° E</span>
+                    <span className="font-mono text-text-muted text-[11px]">{selectedZone.lat != null ? selectedZone.lat.toFixed(4) : '—'}° N, {selectedZone.lng != null ? selectedZone.lng.toFixed(4) : '—'}° E</span>
                   </div>
                 </div>
 

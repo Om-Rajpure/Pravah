@@ -317,7 +317,7 @@ export default function VisitorRoute() {
             </h3>
 
             <div className="space-y-3 pt-1">
-              {routeData.steps.map((step, idx) => (
+              {(Array.isArray(routeData.steps) ? routeData.steps : []).map((step, idx) => (
                 <div key={idx} className="flex items-start gap-3 relative pb-2 last:pb-0">
                   {/* Step icon */}
                   <div className="w-8 h-8 rounded-full bg-surface-muted border border-border flex items-center justify-center flex-shrink-0 z-10">
