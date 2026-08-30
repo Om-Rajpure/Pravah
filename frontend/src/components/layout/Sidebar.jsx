@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import * as Icons from 'lucide-react'
 import { NAV_ITEMS } from '../../lib/constants'
+import { PravaahBrandLogo } from '../shared/PravaahLogo'
 
 export default function Sidebar({ mobileOpen = false, onClose }) {
   const location = useLocation()
@@ -10,19 +11,8 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
     <div className="flex flex-col h-full bg-sidebar-bg w-[240px]">
       {/* Brand Header — PRAVAAH Logo */}
       <div className="px-4 py-4 flex items-center justify-between border-b border-white/[0.08]">
-        <Link to="/control-room/overview" className="flex items-center gap-2.5 min-w-0" onClick={() => { if (onClose) onClose() }}>
-          <img
-            src="/pravaah-logo.png"
-            alt="PRAVAAH"
-            className="h-8 w-auto object-contain flex-shrink-0"
-            onError={(e) => { e.currentTarget.style.display = 'none' }}
-          />
-          <div className="flex flex-col min-w-0">
-            <span className="text-white font-bold text-[16px] tracking-tight leading-none">PRAVAAH</span>
-            <span className="text-sidebar-text-secondary text-[11px] tracking-[0.1em] uppercase font-medium mt-1 leading-none">
-              City Intelligence
-            </span>
-          </div>
+        <Link to="/control-room/overview" className="flex items-center min-w-0" onClick={() => { if (onClose) onClose() }}>
+          <PravaahBrandLogo variant="dark" size="sm" />
         </Link>
 
         {/* Mobile close button */}

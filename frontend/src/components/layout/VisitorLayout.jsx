@@ -1,6 +1,7 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import * as Icons from 'lucide-react'
 import { VISITOR_NAV_ITEMS } from '../../lib/constants.js'
+import { PravaahBrandLogo } from '../shared/PravaahLogo'
 
 export default function VisitorLayout() {
   const location = useLocation()
@@ -8,17 +9,11 @@ export default function VisitorLayout() {
   return (
     <div className="min-h-screen bg-background flex flex-col pb-[72px] sm:pb-[76px]">
       {/* Top Header */}
-      <header className="bg-navy h-13 sm:h-14 flex items-center justify-between px-4 sm:px-6 border-b border-navy-light/30 sticky top-0 z-30 shadow-[0_2px_8px_rgba(11,35,66,0.25)]">
+      <header className="bg-navy h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6 border-b border-navy-light/30 sticky top-0 z-30 shadow-[0_2px_8px_rgba(11,35,66,0.25)]">
         <div className="flex items-center gap-2.5">
-          <Link to="/visitor" className="flex items-center gap-2">
-            <img
-              src="/pravaah-logo.png"
-              alt="PRAVAAH"
-              className="h-7 w-auto object-contain"
-              onError={(e) => { e.currentTarget.style.display = 'none' }}
-            />
-            <span className="text-white font-bold text-[15px] sm:text-base tracking-tight">PRAVAAH</span>
-            <span className="text-[10px] text-white/50 font-semibold uppercase tracking-wider bg-white/10 px-1.5 py-0.5 rounded ml-1">
+          <Link to="/visitor" className="flex items-center">
+            <PravaahBrandLogo variant="dark" size="sm" showTagline={false} />
+            <span className="text-[10px] text-tealLight font-bold uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full ml-2.5">
               Visitor Guide
             </span>
           </Link>

@@ -10,6 +10,7 @@ import {
   FlaskConical, Users, Activity, CheckCircle2, Menu, X, Eye,
   Map, Brain, Lock, Sparkles, ChevronRight, MapPin
 } from 'lucide-react'
+import { PravaahBrandLogo } from '../components/shared/PravaahLogo'
 
 /* ─── Brand Colors ───────────────────────────────────────── */
 const C = {
@@ -189,8 +190,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-18 flex items-center justify-between">
           
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-            <img src="/pravaah-logo.png" alt="PRAVAAH" className="h-8 sm:h-9 w-auto object-contain brightness-0 invert transition-transform group-hover:scale-105" />
+          <Link to="/" className="flex items-center shrink-0 group">
+            <PravaahBrandLogo variant="dark" size="sm" />
           </Link>
 
           {/* Desktop Nav Links */}
@@ -702,8 +703,8 @@ export default function LandingPage() {
         className="py-20 sm:py-28 text-center"
       >
         <div className="max-w-2xl mx-auto flex flex-col items-center gap-6">
-          <FadeUp>
-            <img src="/pravaah-logo.png" alt="PRAVAAH" className="h-12 w-auto object-contain brightness-0 invert mx-auto mb-4" />
+          <FadeUp className="flex flex-col items-center">
+            <PravaahBrandLogo variant="dark" size="lg" className="mb-4" />
             <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
               Ready to experience<br />
               <span className="bg-gradient-to-r from-[#38BFB0] to-[#F0B848] bg-clip-text text-transparent">PRAVAAH?</span>
@@ -739,7 +740,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 pb-10 border-b border-white/10">
             
             <div className="lg:col-span-2 space-y-3">
-              <img src="/pravaah-logo.png" alt="PRAVAAH" className="h-8 w-auto object-contain brightness-0 invert" />
+              <PravaahBrandLogo variant="dark" size="sm" />
               <p className="text-xs text-white/70 leading-relaxed max-w-sm">
                 Predictive Resilience & Adaptive Versatile Assistance for All in Harmony. Built for Ganesh Chaturthi 2026, Mumbai.
               </p>
