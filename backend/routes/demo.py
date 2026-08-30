@@ -13,30 +13,6 @@ from utils.errors import make_error_response
 demo_bp = Blueprint('demo', __name__)
 
 
-@demo_bp.route('/api/health', methods=['GET'])
-def health_check():
-    """Enhanced health check with simulation, environment, and demo status."""
-    try:
-        sim = get_simulator()
-        sim_state = sim.get_state()
-        demo = get_demo_service()
-        demo_status = demo.get_status()
-        return jsonify({
-            'status': 'ok',
-            'service': Config.SERVICE_NAME,
-            'version': Config.VERSION,
-            'environment': Config.ENV,
-            'simulation_time': sim_state.get('simulation_time', '18:00'),
-            'simulation_status': sim_state.get('status', 'PAUSED'),
-            'demo_active': demo_status.get('demo_active', True),
-            'demo_event': demo_status.get('current_event', {}).get('label', 'Unknown'),
-            'network_version': demo_status.get('network_version', 1),
-            'active_scenario': demo_status.get('active_scenario'),
-            'data_label': 'SIMULATION · SYNTHETIC',
-        })
-    except Exception as e:
-        return make_error_response("HEALTH_CHECK_FAILED", f"Service degraded: {str(e)}", 503)
-
 
 @demo_bp.route('/api/ready', methods=['GET'])
 def readiness_check():
