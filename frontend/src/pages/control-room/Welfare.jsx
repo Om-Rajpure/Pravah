@@ -53,7 +53,8 @@ export default function Welfare() {
   if (loading) return <LoadingState message="Loading civic welfare telemetry..." />
   if (!data) return null
 
-  const { summary, amenities } = data
+  const summary = data.summary || FALLBACK_WELFARE.summary
+  const amenities = Array.isArray(data.amenities) ? data.amenities : FALLBACK_WELFARE.amenities
 
   const typeIcons = {
     water: Droplets,

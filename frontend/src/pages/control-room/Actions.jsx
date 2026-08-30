@@ -60,7 +60,7 @@ export default function Actions() {
         getScenarios().catch(() => null)
       ])
       setData(recRes || FALLBACK_ACTION_DATA)
-      setScenarios(scenRes || FALLBACK_SCENARIOS)
+      setScenarios(Array.isArray(scenRes) ? scenRes : (scenRes?.scenarios || FALLBACK_SCENARIOS))
     } catch (err) {
       console.error('Failed to load actions & scenarios:', err)
       setData(FALLBACK_ACTION_DATA)

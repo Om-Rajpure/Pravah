@@ -141,7 +141,7 @@ export default function VisitorSupport() {
           </div>
         ) : (
           <div className="space-y-2.5">
-            {supportData?.amenities?.map((a) => (
+            {Array.isArray(supportData?.amenities) && supportData.amenities.map((a) => (
               <div 
                 key={a.id}
                 className="bg-surface border border-border rounded-card p-3.5 sm:p-4 shadow-subtle flex items-center justify-between gap-3 hover:border-navy/40 transition-colors"

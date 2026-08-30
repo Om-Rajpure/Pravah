@@ -50,7 +50,7 @@ export function WeatherPanel() {
     )
   }
 
-  if (error || !weather) {
+  if (error || !weather || !weather.current) {
     return (
       <div className="bg-surface border border-border rounded-[14px] p-5 w-full text-[13px] text-text-muted flex flex-col items-center justify-center min-h-[100px] gap-2">
         <AlertCircle size={18} className="text-warning" />
@@ -59,7 +59,8 @@ export function WeatherPanel() {
     )
   }
 
-  const impactValue = Math.round((weather.weather_factor - 1.0) * 100)
+  const current = weather.current || {}
+  const impactValue = Math.round(((weather.weather_factor ?? 1.0) - 1.0) * 100)
   const impactText = impactValue > 0 ? `+${impactValue}% crowd pressure` : 'Normal Flow'
 
   return (
@@ -67,15 +68,15 @@ export function WeatherPanel() {
       {/* Top row: Condition & Live Badge */}
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-3">
-          <div className="text-[34px] leading-none" title={weather.current.condition}>
-            {weather.current.icon}
+          <div className="text-[34px] leading-none" title={current.condition || 'Current weather'}>
+            {current.icon || '🌤️'}
           </div>
           <div className="flex flex-col">
             <span className="text-[32px] sm:text-[36px] font-bold text-text-primary leading-none tracking-tight">
-              {Math.round(weather.current.temperature)}°C
+              {Math.round(current.temperature ?? 28)}°C
             </span>
             <span className="text-[14px] font-medium text-text-secondary mt-1">
-              {weather.current.condition}
+              {current.condition || 'Mainly Clear'}
             </span>
           </div>
         </div>
@@ -86,26 +87,26 @@ export function WeatherPanel() {
       <div className="flex items-center justify-between text-[12px] sm:text-[13px] text-text-secondary border-t border-border/60 pt-3">
         <div className="flex items-center gap-1.5" title="Humidity">
           <Droplets size={14} className="text-teal" />
-          <span>{weather.current.humidity}% Humidity</span>
+          <span>{current.humidity ?? 65}% Humidity</span>
         </div>
         <div className="flex items-center gap-1.5" title="Wind">
           <Wind size={14} className="text-teal" />
-          <span>{Math.round(weather.current.wind_speed)} km/h</span>
+          <span>{Math.round(current.wind_speed ?? 12)} km/h</span>
         </div>
         <div className="flex items-center gap-1.5" title="Precipitation">
           <Cloud size={14} className="text-teal" />
-          <span>{weather.current.rain || 0} mm</span>
+          <span>{current.rain ?? 0} mm</span>
         </div>
       </div>
 
       {/* 3-Hour Forecast Chips */}
-      {weather.hourly && weather.hourly.length > 0 && (
+      {Array.isArray(weather.hourly) && weather.hourly.length > 0 && (
         <div className="flex gap-2 justify-between border-t border-border/60 pt-3">
           {weather.hourly.slice(0, 3).map((hour, i) => (
             <div key={i} className="flex flex-col items-center gap-0.5 text-[12px]">
-              <span className="text-text-muted text-[11px]">{hour.hour}</span>
-              <span className="text-base">{hour.icon}</span>
-              <span className="font-semibold text-text-primary">{Math.round(hour.temperature)}°</span>
+              <span className="text-text-muted text-[11px]">{hour?.hour || '--:--'}</span>
+              <span className="text-base">{hour?.icon || '🌤️'}</span>
+              <span className="font-semibold text-text-primary">{Math.round(hour?.temperature ?? 28)}°</span>
             </div>
           ))}
         </div>

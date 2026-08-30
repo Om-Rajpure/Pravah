@@ -55,9 +55,9 @@ export default function VisitorHome() {
   const [userLocationName, setUserLocationName] = useState(null)
 
   useEffect(() => {
-    Promise.all([getDestinations(), getCurrentConditions().catch(() => null)])
+    Promise.all([getDestinations().catch(() => []), getCurrentConditions().catch(() => null)])
       .then(([dests, conds]) => {
-        setDestinations(dests || [])
+        setDestinations(Array.isArray(dests) ? dests : (dests?.destinations || []))
         setConditions(conds)
       })
       .catch(console.error)

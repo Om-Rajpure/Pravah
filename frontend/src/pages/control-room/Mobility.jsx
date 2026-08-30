@@ -56,7 +56,10 @@ export default function Mobility() {
   if (loading) return <LoadingState message="Loading transit and road network..." />
   if (!data) return null
 
-  const { summary, stations, roads, critical_bottlenecks } = data
+  const summary = data.summary || FALLBACK_MOBILITY.summary
+  const stations = Array.isArray(data.stations) ? data.stations : FALLBACK_MOBILITY.stations
+  const roads = Array.isArray(data.roads) ? data.roads : FALLBACK_MOBILITY.roads
+  const critical_bottlenecks = Array.isArray(data.critical_bottlenecks) ? data.critical_bottlenecks : FALLBACK_MOBILITY.critical_bottlenecks
 
   return (
     <div className="space-y-5">

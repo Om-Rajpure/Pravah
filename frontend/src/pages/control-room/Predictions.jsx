@@ -58,7 +58,7 @@ export default function Predictions() {
       setLoading(true)
       setError(null)
       const data = await getPredictions().catch(() => null)
-      setPredictionData(data || FALLBACK_PREDICTIONS)
+      setPredictionData((data && Array.isArray(data.zones)) ? data : FALLBACK_PREDICTIONS)
     } catch (err) {
       console.error('Failed to fetch predictions:', err)
       setPredictionData(FALLBACK_PREDICTIONS)
@@ -71,15 +71,15 @@ export default function Predictions() {
     fetchData()
   }, [])
 
-  if (loading) return <LoadingState message="Calculating network-aware pressure forecasts..." />
+  if (loading) return <LoadingState message="Calculating predictive horizons..." />
   if (!predictionData) return null
 
-  const zones = predictionData.zones || []
-  const selectedZone = zones.find(z => z.zone_id === selectedZoneId) || zones[0]
+  const zones = Array.isArray(predictionData.zones) ? predictionData.zones : []
+  const selectedZone = zones.find(z => z.zone_id === selectedZoneId) || zones[0] || {}
 
   // Find max predicted pressure at active horizon
   const horizonIndex = selectedHorizon === 30 ? 0 : selectedHorizon === 60 ? 1 : selectedHorizon === 120 ? 2 : selectedHorizon === 180 ? 3 : 2
-  const criticalCount = zones.filter(z => (z.predictions[horizonIndex]?.predicted_pressure || z.current_pressure) >= 76).length
+  const criticalCount = zones.filter(z => ((z.predictions || [])[horizonIndex]?.predicted_pressure || z.current_pressure || 0) >= 76).length
 
   return (
     <div className="space-y-4 sm:space-y-5 max-w-[1600px] mx-auto">

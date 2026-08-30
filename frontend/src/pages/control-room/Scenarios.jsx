@@ -20,7 +20,7 @@ export default function Scenarios() {
 
   useEffect(() => {
     getScenarios()
-      .then(data => setScenarios(data || FALLBACK_SCENARIOS))
+      .then(data => setScenarios(Array.isArray(data) ? data : (data?.scenarios || FALLBACK_SCENARIOS)))
       .catch((err) => {
         console.error('Failed to load scenarios:', err)
         setScenarios(FALLBACK_SCENARIOS)
