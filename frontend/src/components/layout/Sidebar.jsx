@@ -76,6 +76,15 @@ export default function Sidebar({ mobileOpen = false, onClose }) {
       {/* Footer: View switcher + build info (12-13px) */}
       <div className="px-3.5 py-3 border-t border-white/[0.08] space-y-1.5">
         <Link
+          to="/"
+          onClick={() => { if (onClose) onClose() }}
+          className="text-[13px] text-sidebar-text-secondary hover:text-sidebar-text transition-colors flex items-center gap-2 px-2.5 py-2 rounded-[6px] hover:bg-white/5 font-medium"
+        >
+          <Icons.Home className="w-4 h-4 text-white/50 flex-shrink-0" />
+          <span>Back to Home</span>
+          <Icons.ArrowRight className="w-3.5 h-3.5 ml-auto opacity-50" />
+        </Link>
+        <Link
           to="/visitor/plan"
           onClick={() => { if (onClose) onClose() }}
           className="text-[13px] text-sidebar-text-secondary hover:text-sidebar-text transition-colors flex items-center gap-2 px-2.5 py-2 rounded-[6px] hover:bg-white/5 font-medium"

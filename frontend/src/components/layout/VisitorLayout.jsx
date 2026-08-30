@@ -25,7 +25,14 @@ export default function VisitorLayout() {
         </div>
 
         {/* Right Nav */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Link
+            to="/"
+            className="text-[12px] text-white/70 font-semibold hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded transition-all flex items-center gap-1.5 shadow-sm"
+          >
+            <Icons.Home className="w-3.5 h-3.5 text-white/60" />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
           <Link
             to="/control-room/overview"
             className="text-[12px] text-white/70 font-semibold hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1.5 rounded transition-all flex items-center gap-1.5 shadow-sm"
