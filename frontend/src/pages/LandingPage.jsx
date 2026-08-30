@@ -1,204 +1,183 @@
 /**
- * PRAVAAH Landing Page
- * Dashboard-first entry experience introducing the product through the actual Control Room.
+ * PRAVAAH Landing Page — Premium Redesign
+ * Dark, animated, cinematic city intelligence experience
  */
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Menu, X, ArrowRight, LayoutDashboard, Map, TrendingUp, Zap,
+  ArrowRight, LayoutDashboard, Map, TrendingUp, Zap,
   Shield, FlaskConical, BarChart3, Hotel, TrainFront, HeartHandshake,
-  Users, Activity, AlertTriangle, Eye, CheckCircle2, ChevronRight
+  Users, Activity, CheckCircle2, ChevronRight, Menu, X, Sparkles,
+  Brain, Globe, Lock
 } from 'lucide-react'
-import { HeroPreview } from '../components/landing/HeroPreview'
-import { PredictionStory } from '../components/landing/PredictionStory'
-import { ScenarioDemo } from '../components/landing/ScenarioDemo'
 
-function SectionLabel({ children }) {
+/* ─── Animated counter hook ─────────────────────────────────── */
+function useCounter(target, duration = 1800, start = false) {
+  const [val, setVal] = useState(0)
+  useEffect(() => {
+    if (!start) return
+    let startTime = null
+    const step = (ts) => {
+      if (!startTime) startTime = ts
+      const p = Math.min((ts - startTime) / duration, 1)
+      setVal(Math.floor(p * p * target))
+      if (p < 1) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }, [target, duration, start])
+  return val
+}
+
+/* ─── Intersection observer hook ────────────────────────────── */
+function useInView(threshold = 0.2) {
+  const ref = useRef(null)
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setInView(true) }, { threshold })
+    if (ref.current) obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [threshold])
+  return [ref, inView]
+}
+
+/* ─── Animated stat card ─────────────────────────────────────── */
+function StatCard({ value, suffix = '', label, color = '#2D9C8F', prefix = '' }) {
+  const [ref, inView] = useInView(0.3)
+  const count = useCounter(parseInt(value), 1600, inView)
   return (
-    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#2D9C8F]/10 border border-[#2D9C8F]/20 text-[#2D9C8F] text-[10px] font-bold uppercase tracking-[0.18em] mb-3">
-      <span className="w-1.5 h-1.5 rounded-full bg-[#2D9C8F]"></span>
-      <span>{children}</span>
+    <div ref={ref} className="flex flex-col items-center gap-1">
+      <span className="text-4xl sm:text-5xl font-black tabular-nums" style={{ color }}>
+        {prefix}{inView ? count : 0}{suffix}
+      </span>
+      <span className="text-[11px] uppercase tracking-widest font-semibold text-[#7A96B8]">{label}</span>
     </div>
   )
 }
 
-function SectionHeading({ children }) {
+/* ─── Floating metric chip ───────────────────────────────────── */
+function LiveChip({ label, value, color }) {
   return (
-    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#17212B] tracking-tight leading-tight">
-      {children}
-    </h2>
+    <div className="flex items-center gap-2 bg-[#0B2342]/80 backdrop-blur border border-[#1A4070]/60 rounded-full px-3.5 py-2 text-xs font-bold shadow-lg">
+      <span className="w-2 h-2 rounded-full animate-pulse flex-shrink-0" style={{ backgroundColor: color }} />
+      <span className="text-white">{value}</span>
+      <span className="text-[#7A96B8]">{label}</span>
+    </div>
   )
 }
 
-function Divider() {
-  return <div className="border-t border-[#DDD8CF]/80" />
-}
-
-function IntelligenceStrip() {
-  const metrics = [
-    { label: 'CITY PRESSURE', value: '78', max: '/ 100', status: 'CRITICAL', color: '#B03A2E', bg: 'bg-[#B03A2E]/10' },
-    { label: 'ACTIVE MOVING', value: '163K', max: 'visitors', status: 'LIVE', color: '#2468B8', bg: 'bg-[#2468B8]/10' },
-    { label: 'TRANSPORT LOAD', value: '66%', max: 'suburban', status: 'SATURATED', color: '#E69A2E', bg: 'bg-[#E69A2E]/10' },
-    { label: 'ACTIVE ALERTS', value: '4', max: 'zones', status: 'ATTENTION', color: '#B03A2E', bg: 'bg-[#B03A2E]/10' },
-    { label: 'SIMULATION', value: '18:00', max: 'Day 9', status: 'DEMO CLOCK', color: '#2D9C8F', bg: 'bg-[#2D9C8F]/10' }
-  ]
-
+/* ─── Feature card ───────────────────────────────────────────── */
+function FeatureCard({ num, icon: Icon, title, desc, accent, link }) {
   return (
-    <section className="bg-[#081D38] border-y border-[#1A4070]/60 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-[#1A4070]/40 py-1">
-          {metrics.map((m, idx) => (
-            <div key={idx} className="px-4 py-3.5 flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[9.5px] font-bold tracking-widest text-[#7A96B8] uppercase">{m.label}</span>
-                <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded ${m.bg}`} style={{ color: m.color }}>
-                  {m.status}
-                </span>
-              </div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl font-black font-mono tracking-tight text-white">{m.value}</span>
-                <span className="text-[11px] text-[#7A96B8] font-medium">{m.max}</span>
-              </div>
-            </div>
-          ))}
+    <Link to={link} className="group relative bg-[#0B2342]/60 backdrop-blur border border-[#1A4070]/60 rounded-2xl p-6 flex flex-col gap-4 overflow-hidden hover:border-opacity-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+      style={{ '--accent': accent }}>
+      {/* Subtle gradient glow on hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"
+        style={{ background: `radial-gradient(ellipse at top left, ${accent}15 0%, transparent 70%)` }} />
+      <div className="flex items-start justify-between">
+        <span className="text-[11px] font-black font-mono tracking-widest" style={{ color: accent }}>{num}</span>
+        <div className="p-2.5 rounded-xl transition-colors duration-300" style={{ background: `${accent}18` }}>
+          <Icon className="w-5 h-5 transition-colors duration-300" style={{ color: accent }} />
         </div>
       </div>
-    </section>
+      <div>
+        <h3 className="text-white font-bold text-base mb-1.5">{title}</h3>
+        <p className="text-[#7A96B8] text-xs leading-relaxed">{desc}</p>
+      </div>
+      <div className="flex items-center gap-1 text-[11px] font-semibold transition-colors duration-200 mt-auto pt-2 border-t border-[#1A4070]/40"
+        style={{ color: accent }}>
+        <span>Launch Module</span>
+        <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover:translate-x-1" />
+      </div>
+    </Link>
   )
 }
 
+/* ─── Before/After toggle ────────────────────────────────────── */
 function BeforeAfter() {
   const [view, setView] = useState('after')
+  const [ref, inView] = useInView(0.2)
 
-  const beforeData = {
-    pressure: 94,
-    criticalZones: 3,
-    transportLoad: 84,
-    tag: 'UNMANAGED CONVERGENCE',
-    tagColor: 'text-[#B03A2E] bg-[#F5E4E2] border-[#B03A2E]/30',
-    title: 'Curry Road Ingress Saturation',
-    summary: 'Mass pedestrian accumulation exceeding safety threshold along station footbridge. Flow velocity reduced to 0.4 m/s.',
-    zones: [
-      { name: 'Curry Road Station', status: 'CRITICAL', value: 94, color: '#B03A2E' },
-      { name: 'Lalbaugcha Raja Core', status: 'CRITICAL', value: 88, color: '#B03A2E' },
-      { name: 'Parel Transit Junction', status: 'CRITICAL', value: 86, color: '#B03A2E' },
-      { name: 'Dadar Interchange', status: 'HIGH', value: 78, color: '#E69A2E' }
-    ]
+  const states = {
+    before: {
+      tag: 'WITHOUT INTERVENTION', tagColor: '#B03A2E', tagBg: 'rgba(176,58,46,0.12)',
+      pressure: 94, critical: 3, load: 84,
+      zones: [
+        { name: 'Curry Road Station', val: 94, color: '#B03A2E', status: 'CRITICAL' },
+        { name: 'Lalbaugcha Raja Core', val: 88, color: '#B03A2E', status: 'CRITICAL' },
+        { name: 'Parel Transit Junction', val: 86, color: '#E69A2E', status: 'HIGH' },
+        { name: 'Dadar Interchange', val: 78, color: '#E69A2E', status: 'HIGH' },
+      ]
+    },
+    after: {
+      tag: 'PRAVAAH INTERVENTION APPLIED', tagColor: '#2D9C8F', tagBg: 'rgba(45,156,143,0.12)',
+      pressure: 76, critical: 1, load: 66,
+      zones: [
+        { name: 'Curry Road Station', val: 76, color: '#E69A2E', status: 'MODERATE' },
+        { name: 'Lalbaugcha Raja Core', val: 72, color: '#E69A2E', status: 'MODERATE' },
+        { name: 'Parel Transit Junction', val: 58, color: '#2D9C8F', status: 'LOW' },
+        { name: 'Dadar Interchange', val: 54, color: '#2D9C8F', status: 'LOW' },
+      ]
+    }
   }
-
-  const afterData = {
-    pressure: 76,
-    criticalZones: 1,
-    transportLoad: 66,
-    tag: 'COUNTERFACTUAL IMPACT APPLIED',
-    tagColor: 'text-[#2D9C8F] bg-[#E4F4F2] border-[#2D9C8F]/30',
-    title: 'Flow Redistribution & Buffer Optimization',
-    summary: 'Suburban inflow dynamically diverted via Thane/Vashi corridors. Pressure relieved before station collapse.',
-    zones: [
-      { name: 'Curry Road Station', status: 'HIGH', value: 76, color: '#E69A2E' },
-      { name: 'Lalbaugcha Raja Core', status: 'HIGH', value: 72, color: '#E69A2E' },
-      { name: 'Parel Transit Junction', status: 'MODERATE', value: 58, color: '#B8893D' },
-      { name: 'Dadar Interchange', status: 'MODERATE', value: 54, color: '#2D9C8F' }
-    ]
-  }
-
-  const active = view === 'before' ? beforeData : afterData
+  const d = states[view]
 
   return (
-    <div className="bg-surface border border-border rounded-xl shadow-subtle p-6 sm:p-8 max-w-4xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/80">
-        <div>
-          <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded border ${active.tagColor} uppercase tracking-wider mb-1.5`}>
-            {active.tag}
-          </span>
-          <h3 className="text-xl font-bold text-text-primary">{active.title}</h3>
-          <p className="text-xs sm:text-sm text-text-secondary mt-1 max-w-xl">{active.summary}</p>
-        </div>
-
-        <div className="flex items-center p-1 bg-surface-muted rounded-lg border border-border flex-shrink-0 self-start sm:self-center">
-          <button
-            onClick={() => setView('before')}
-            className={`px-3.5 py-1.5 text-xs font-bold rounded-md transition-all ${
-              view === 'before'
-                ? 'bg-critical text-white shadow-sm'
-                : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            Before Action
-          </button>
-          <button
-            onClick={() => setView('after')}
-            className={`px-3.5 py-1.5 text-xs font-bold rounded-md transition-all ${
-              view === 'after'
-                ? 'bg-teal text-white shadow-sm'
-                : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            After Intervention
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
-        <div className="p-4 rounded-lg bg-surface-muted/50 border border-border/60 flex flex-col justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Target Pressure</span>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-black font-mono" style={{ color: active.zones[0].color }}>
-              {active.pressure}
+    <div ref={ref} className={`transition-all duration-700 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className="bg-[#081D38] border border-[#1A4070] rounded-2xl overflow-hidden shadow-2xl">
+        {/* Toggle header */}
+        <div className="flex items-center justify-between p-5 border-b border-[#1A4070]/60">
+          <div>
+            <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border"
+              style={{ color: d.tagColor, background: d.tagBg, borderColor: `${d.tagColor}40` }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: d.tagColor }} />
+              {d.tag}
             </span>
-            <span className="text-xs text-text-muted">/ 100 max</span>
+            <p className="text-white font-bold text-lg mt-2">
+              {view === 'before' ? 'Curry Road Saturation Event' : 'Flow Redistribution Applied'}
+            </p>
           </div>
-          <span className="text-[11px] font-medium text-text-secondary mt-1">
-            {view === 'before' ? 'Critical danger point' : '-18 pts safety delta'}
-          </span>
+          <div className="flex gap-1 p-1 bg-[#0B2342] rounded-xl border border-[#1A4070]/40">
+            <button onClick={() => setView('before')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${view === 'before' ? 'bg-[#B03A2E] text-white shadow' : 'text-[#7A96B8] hover:text-white'}`}>
+              Before
+            </button>
+            <button onClick={() => setView('after')}
+              className={`px-4 py-2 text-xs font-bold rounded-lg transition-all duration-200 ${view === 'after' ? 'bg-[#2D9C8F] text-white shadow' : 'text-[#7A96B8] hover:text-white'}`}>
+              After
+            </button>
+          </div>
         </div>
 
-        <div className="p-4 rounded-lg bg-surface-muted/50 border border-border/60 flex flex-col justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Critical Hotspots</span>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-black font-mono" style={{ color: active.zones[0].color }}>
-              {active.criticalZones}
-            </span>
-            <span className="text-xs text-text-muted">zones above 85%</span>
-          </div>
-          <span className="text-[11px] font-medium text-text-secondary mt-1">
-            {view === 'before' ? 'Cascading risk' : 'Contained to single zone'}
-          </span>
-        </div>
-
-        <div className="p-4 rounded-lg bg-surface-muted/50 border border-border/60 flex flex-col justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Transit Saturation</span>
-          <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl font-black font-mono text-navy">
-              {active.transportLoad}%
-            </span>
-            <span className="text-xs text-text-muted">capacity</span>
-          </div>
-          <span className="text-[11px] font-medium text-text-secondary mt-1">
-            {view === 'before' ? 'Ingress bottleneck' : 'Even corridor distribution'}
-          </span>
-        </div>
-      </div>
-
-      <div className="space-y-3 pt-2">
-        <p className="text-[10.5px] font-bold uppercase tracking-widest text-text-muted mb-2">
-          Monitored Sub-Zone Impact Matrix
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {active.zones.map((z, idx) => (
-            <div key={idx} className="p-3 rounded-lg bg-surface border border-border/70 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-semibold text-text-primary block">{z.name}</span>
-                <span className="text-[10px] font-bold" style={{ color: z.color }}>
-                  {z.status} ({z.value}%)
-                </span>
+        {/* Metrics */}
+        <div className="grid grid-cols-3 divide-x divide-[#1A4070]/40 border-b border-[#1A4070]/40">
+          {[
+            { label: 'Target Pressure', val: d.pressure, unit: '/ 100', color: d.zones[0].color },
+            { label: 'Critical Hotspots', val: d.critical, unit: 'zones', color: d.zones[0].color },
+            { label: 'Transit Saturation', val: `${d.load}%`, unit: 'capacity', color: '#2468B8' }
+          ].map((m, i) => (
+            <div key={i} className="p-5 flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider text-[#7A96B8] font-bold">{m.label}</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-3xl font-black tabular-nums" style={{ color: m.color }}>{m.val}</span>
+                <span className="text-xs text-[#7A96B8]">{m.unit}</span>
               </div>
-              <div className="w-24 h-2 rounded-full bg-surface-muted overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${z.value}%`, backgroundColor: z.color }}
-                />
+            </div>
+          ))}
+        </div>
+
+        {/* Zone bars */}
+        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {d.zones.map((z, i) => (
+            <div key={i} className="bg-[#0B2342]/80 rounded-xl p-3.5 border border-[#1A4070]/40">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-semibold text-white">{z.name}</span>
+                <span className="text-[10px] font-bold" style={{ color: z.color }}>{z.status}</span>
               </div>
+              <div className="h-1.5 bg-[#1A4070]/60 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-700"
+                  style={{ width: `${z.val}%`, background: z.color }} />
+              </div>
+              <span className="text-[10px] text-[#7A96B8] font-mono mt-1 block">{z.val}/100</span>
             </div>
           ))}
         </div>
@@ -207,578 +186,569 @@ function BeforeAfter() {
   )
 }
 
+/* ─── Animated section wrapper ───────────────────────────────── */
+function FadeIn({ children, delay = 0, className = '' }) {
+  const [ref, inView] = useInView(0.1)
+  return (
+    <div ref={ref} className={`transition-all duration-700 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}>
+      {children}
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN LANDING PAGE
+═══════════════════════════════════════════════════════════════ */
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   return (
-    <div className="min-h-screen bg-background text-text-primary flex flex-col selection:bg-navy selection:text-white">
-      {/* ── TOP RESTRAINED NAVIGATION ─────────────────────────── */}
-      <header className="sticky top-0 z-50 bg-[#0B2342] border-b border-[#1A4070]/60 shadow-[0_2px_12px_rgba(11,35,66,0.3)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
-          {/* Brand Identity */}
+    <div className="min-h-screen bg-[#060F1E] text-white selection:bg-[#2D9C8F]/40 selection:text-white font-sans">
+
+      {/* ── STICKY NAV ─────────────────────────────────────────── */}
+      <header className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#0B2342]/95 backdrop-blur-md border-b border-[#1A4070]/60 shadow-lg' : 'bg-transparent'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <img
-              src="/pravaah-logo.png"
-              alt="PRAVAAH City Intelligence"
-              className="h-8 sm:h-9 w-auto object-contain transition-transform group-hover:scale-105"
-            />
+            <img src="/favicon.jpg" alt="PRAVAAH" className="h-8 w-8 rounded-lg object-cover shadow-md" />
             <div className="flex flex-col">
-              <span className="text-white font-black text-lg sm:text-xl tracking-tight leading-none">PRAVAAH</span>
-              <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#7A96B8]">City Intelligence</span>
+              <span className="text-white font-black text-lg tracking-tight leading-none">PRAVAAH</span>
+              <span className="text-[8.5px] font-bold uppercase tracking-[0.22em] text-[#2D9C8F]">City Intelligence</span>
             </div>
           </Link>
 
-          {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-6 text-[13px] font-semibold text-[#CBD8E8]">
-            <Link to="/control-room/overview" className="hover:text-white transition-colors">Control Room</Link>
-            <a href="#how-pravaah-thinks" className="hover:text-white transition-colors">How It Works</a>
-            <a href="#scenario-engine" className="hover:text-white transition-colors">Scenarios</a>
-            <Link to="/visitor" className="hover:text-white transition-colors">Visitor Experience</Link>
-            <a href="#glass-box-explainability" className="hover:text-white transition-colors">Glass Box</a>
+          <nav className="hidden md:flex items-center gap-7 text-[13px] font-semibold text-[#7A96B8]">
+            <a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a>
+            <a href="#impact" className="hover:text-white transition-colors">Impact</a>
+            <Link to="/control-room/glass-box" className="hover:text-white transition-colors">Glass Box</Link>
+            <Link to="/visitor" className="hover:text-white transition-colors">Visitor Guide</Link>
           </nav>
 
-          {/* Action CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              to="/control-room/overview"
-              className="inline-flex items-center gap-2 bg-[#E69A2E] hover:bg-[#C87524] active:bg-[#C87524] text-[#0B2342] text-xs font-bold px-4 py-2.5 rounded-lg shadow-sm transition-all"
-            >
+            <Link to="/visitor" className="text-[13px] font-semibold text-[#7A96B8] hover:text-white transition-colors px-3 py-2">
+              Visitor Mode
+            </Link>
+            <Link to="/control-room/overview"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#E69A2E] to-[#F0B848] hover:from-[#C87524] hover:to-[#E69A2E] text-[#060F1E] text-[13px] font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-[#E69A2E]/20 transition-all duration-200 hover:shadow-[#E69A2E]/40 hover:scale-105">
               <LayoutDashboard className="w-4 h-4" />
-              <span>ENTER CONTROL ROOM</span>
+              Control Room
             </Link>
           </div>
 
-          {/* Mobile menu trigger */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-            aria-label="Toggle Navigation Menu"
-          >
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 text-white hover:bg-white/10 rounded-lg">
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
-        {/* Mobile menu dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-[#081D38] border-b border-[#1A4070] px-4 py-4 space-y-3 animate-in slide-in-from-top-2 duration-150">
-            <Link
-              to="/control-room/overview"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 text-sm font-semibold text-white hover:text-[#E69A2E]"
-            >
-              Control Room
-            </Link>
-            <a
-              href="#how-pravaah-thinks"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 text-sm font-semibold text-[#CBD8E8] hover:text-white"
-            >
-              How It Works
-            </a>
-            <a
-              href="#scenario-engine"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 text-sm font-semibold text-[#CBD8E8] hover:text-white"
-            >
-              Scenarios
-            </a>
-            <Link
-              to="/visitor"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 text-sm font-semibold text-[#CBD8E8] hover:text-white"
-            >
-              Visitor Experience
-            </Link>
-            <a
-              href="#glass-box-explainability"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-2 text-sm font-semibold text-[#CBD8E8] hover:text-white"
-            >
-              Glass Box
-            </a>
-            <div className="pt-2 border-t border-[#1A4070]/60">
-              <Link
-                to="/control-room/overview"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full flex items-center justify-center gap-2 bg-[#E69A2E] text-[#0B2342] text-xs font-bold py-3 rounded-lg"
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                <span>ENTER CONTROL ROOM</span>
+          <div className="md:hidden bg-[#0B2342]/98 backdrop-blur border-b border-[#1A4070] px-4 py-4 space-y-2 animate-in slide-in-from-top-2 duration-150">
+            {[
+              { label: 'Control Room', to: '/control-room/overview', cta: true },
+              { label: 'How It Works', href: '#how-it-works' },
+              { label: 'Before / After', href: '#impact' },
+              { label: 'Visitor Guide', to: '/visitor' },
+            ].map((item, i) => item.to ? (
+              <Link key={i} to={item.to} onClick={() => setMobileMenuOpen(false)}
+                className={`block py-2.5 px-3 rounded-xl text-sm font-bold transition-colors ${item.cta ? 'bg-[#E69A2E] text-[#060F1E]' : 'text-white hover:bg-white/10'}`}>
+                {item.label}
               </Link>
-            </div>
+            ) : (
+              <a key={i} href={item.href} onClick={() => setMobileMenuOpen(false)}
+                className="block py-2.5 px-3 rounded-xl text-sm font-semibold text-[#CBD8E8] hover:text-white hover:bg-white/5">
+                {item.label}
+              </a>
+            ))}
           </div>
         )}
       </header>
 
-      {/* ── HERO SECTION: DASHBOARD FIRST ────────────────────── */}
-      <section className="bg-[#0B2342] text-white pt-8 pb-12 sm:pt-12 sm:pb-16 border-b border-[#1A4070]/40 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-            {/* Left Hero Pitch */}
-            <div className="lg:col-span-5 flex flex-col justify-center space-y-5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#2D9C8F]/15 border border-[#2D9C8F]/30 text-[#2D9C8F] text-[10.5px] font-bold uppercase tracking-widest w-fit">
-                <span className="w-2 h-2 rounded-full bg-[#2D9C8F] animate-ping"></span>
-                <span>CITY INTELLIGENCE PLATFORM</span>
+      {/* ── HERO ───────────────────────────────────────────────── */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
+        {/* Multi-layer background */}
+        <div className="absolute inset-0">
+          {/* Deep radial gradient */}
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 20%, #0E2A4A 0%, #060F1E 70%)' }} />
+          {/* Animated grid */}
+          <div className="absolute inset-0 opacity-[0.07]"
+            style={{ backgroundImage: 'linear-gradient(#2D9C8F 1px, transparent 1px), linear-gradient(90deg, #2D9C8F 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+          {/* Glow orbs */}
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full opacity-[0.08] blur-3xl animate-pulse" style={{ background: '#2D9C8F', animationDuration: '4s' }} />
+          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 rounded-full opacity-[0.06] blur-3xl animate-pulse" style={{ background: '#E69A2E', animationDuration: '6s' }} />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+
+            {/* Left pitch */}
+            <div className="space-y-8">
+              {/* Live badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border text-[11px] font-bold uppercase tracking-widest"
+                style={{ background: 'rgba(45,156,143,0.1)', borderColor: 'rgba(45,156,143,0.35)', color: '#2D9C8F' }}>
+                <span className="w-2 h-2 rounded-full bg-[#2D9C8F] animate-ping" />
+                Live City Intelligence · Mumbai 2026
               </div>
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] text-white">
-                City intelligence for complex moments.
-              </h1>
+              {/* Headline */}
+              <div className="space-y-4">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05]">
+                  <span className="text-white">When millions</span>
+                  <br />
+                  <span style={{ background: 'linear-gradient(90deg, #2D9C8F, #38BFB0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    move as one.
+                  </span>
+                </h1>
+                <p className="text-[#7A96B8] text-base sm:text-lg leading-relaxed max-w-lg">
+                  PRAVAAH orchestrates city-scale crowd intelligence — predicting surges, simulating interventions, and balancing Mumbai's arteries before Ganesh Chaturthi reaches breaking point.
+                </p>
+              </div>
 
-              <p className="text-base sm:text-lg text-[#CBD8E8] font-normal leading-relaxed">
-                Predict pressure. Understand crowd movement. Act before disruption spreads across the urban network.
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-                <Link
-                  to="/control-room/overview"
-                  className="inline-flex items-center justify-center gap-2 bg-[#E69A2E] hover:bg-[#C87524] active:bg-[#C87524] text-[#0B2342] font-bold text-sm px-6 py-3.5 rounded-lg shadow-elevated transition-all"
-                >
+              {/* CTA row */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link to="/control-room/overview"
+                  className="group inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#E69A2E] to-[#F0B848] text-[#060F1E] font-black text-sm px-7 py-4 rounded-xl shadow-xl shadow-[#E69A2E]/25 transition-all duration-200 hover:scale-105 hover:shadow-[#E69A2E]/40">
                   <LayoutDashboard className="w-4 h-4" />
-                  <span>ENTER CONTROL ROOM</span>
+                  Enter Control Room
+                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                 </Link>
-
-                <Link
-                  to="/control-room/scenarios"
-                  className="inline-flex items-center justify-center gap-2 bg-[#12315B] hover:bg-[#1A4070] text-white font-semibold text-sm px-5 py-3.5 rounded-lg border border-[#1A4070] transition-all"
-                >
-                  <FlaskConical className="w-4 h-4 text-[#2D9C8F]" />
-                  <span>RUN WHAT-IF SCENARIO</span>
+                <Link to="/visitor"
+                  className="inline-flex items-center justify-center gap-2.5 bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/30 text-white font-bold text-sm px-6 py-4 rounded-xl transition-all duration-200">
+                  <Users className="w-4 h-4 text-[#2D9C8F]" />
+                  Visitor Experience
                 </Link>
               </div>
 
-              <div className="flex items-center gap-6 pt-3 text-[11px] text-[#7A96B8] border-t border-[#1A4070]/50">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#2D9C8F]"></span>
-                  <span>11 Monitored Hubs</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#E69A2E]"></span>
-                  <span>Deterministic Twin</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#2468B8]"></span>
-                  <span>Glass Box Rationale</span>
-                </div>
+              {/* Trust signals */}
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-2 border-t border-white/[0.08]">
+                {[
+                  { dot: '#2D9C8F', label: '11 Monitored Hubs' },
+                  { dot: '#E69A2E', label: 'Deterministic Twin' },
+                  { dot: '#2468B8', label: 'Glass Box Audit' },
+                ].map((s, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[12px] text-[#7A96B8]">
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: s.dot }} />
+                    {s.label}
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Right: Actual Hero Interactive Dashboard Preview */}
-            <div className="lg:col-span-7 flex flex-col">
-              <div className="bg-[#081D38]/90 rounded-2xl p-2.5 sm:p-3 border border-[#1A4070] shadow-2xl relative">
-                <HeroPreview />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+            {/* Right: dashboard preview card */}
+            <div className="relative">
+              {/* Glow behind card */}
+              <div className="absolute -inset-8 rounded-3xl opacity-30 blur-2xl" style={{ background: 'radial-gradient(ellipse, #2D9C8F40, transparent 70%)' }} />
 
-      {/* ── LIVE INTELLIGENCE STRIP ──────────────────────────── */}
-      <IntelligenceStrip />
+              <div className="relative bg-[#0B2342]/80 backdrop-blur border border-[#1A4070]/70 rounded-2xl overflow-hidden shadow-2xl">
+                {/* Mock control room header */}
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#1A4070]/60 bg-[#081D38]/80">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#B03A2E]" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#E69A2E]" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#2D9C8F]" />
+                    </div>
+                    <span className="text-[10px] font-mono text-[#7A96B8] ml-2">PRAVAAH · CONTROL ROOM · LIVE</span>
+                  </div>
+                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-[#2D9C8F]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#2D9C8F] animate-pulse" />
+                    LIVE
+                  </span>
+                </div>
 
-      {/* ── HOW PRAVAAH THINKS ──────────────────────────────── */}
-      <section id="how-pravaah-thinks" className="py-16 sm:py-24 bg-surface border-b border-border/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-14">
-            <SectionLabel>Core Architecture</SectionLabel>
-            <SectionHeading>How PRAVAAH Thinks</SectionHeading>
-            <p className="text-text-secondary text-sm sm:text-base mt-3 leading-relaxed">
-              Urban intelligence operates through a continuous feedback loop: identifying bottlenecks early, modeling dynamic interventions, and balancing the city transit infrastructure.
-            </p>
-          </div>
+                {/* Mock metrics grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[#1A4070]/40 border-b border-[#1A4070]/40">
+                  {[
+                    { label: 'CITY PRESSURE', val: '78', unit: '/100', color: '#B03A2E' },
+                    { label: 'ACTIVE VISITORS', val: '163K', unit: 'live', color: '#2468B8' },
+                    { label: 'CRITICAL ZONES', val: '3', unit: 'zones', color: '#E69A2E' },
+                    { label: 'ALERTS', val: '4', unit: 'active', color: '#B03A2E' },
+                  ].map((m, i) => (
+                    <div key={i} className="px-4 py-3">
+                      <div className="text-[9px] font-bold text-[#7A96B8] uppercase tracking-wider mb-1">{m.label}</div>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-black font-mono" style={{ color: m.color }}>{m.val}</span>
+                        <span className="text-[10px] text-[#7A96B8]">{m.unit}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {/* 01 PREDICT */}
-            <div className="bg-background border border-border rounded-xl p-6 sm:p-7 flex flex-col justify-between shadow-subtle hover:border-teal/40 transition-colors">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-3xl font-black font-mono text-teal">01</span>
-                  <div className="p-2 rounded-lg bg-teal/10 text-teal">
-                    <TrendingUp className="w-5 h-5" />
+                {/* Zone pressure bars */}
+                <div className="p-4 space-y-2.5">
+                  <div className="text-[10px] font-bold text-[#7A96B8] uppercase tracking-wider mb-3">Zone Pressure Matrix</div>
+                  {[
+                    { name: 'Curry Road', val: 94, color: '#B03A2E' },
+                    { name: 'Lalbaugcha Raja', val: 88, color: '#B03A2E' },
+                    { name: 'Parel Junction', val: 76, color: '#E69A2E' },
+                    { name: 'Dadar', val: 64, color: '#E69A2E' },
+                    { name: 'Thane Suburban', val: 42, color: '#2D9C8F' },
+                  ].map((z, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-[11px] text-[#CBD8E8] w-32 truncate flex-shrink-0">{z.name}</span>
+                      <div className="flex-1 h-1.5 bg-[#1A4070]/50 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${z.val}%`, background: z.color,
+                            boxShadow: `0 0 8px ${z.color}80` }} />
+                      </div>
+                      <span className="text-[11px] font-mono font-bold flex-shrink-0" style={{ color: z.color }}>{z.val}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action recommendation banner */}
+                <div className="mx-4 mb-4 bg-[#2D9C8F]/10 border border-[#2D9C8F]/30 rounded-xl p-3.5 flex items-start gap-3">
+                  <Zap className="w-4 h-4 text-[#2D9C8F] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-[10px] font-bold text-[#2D9C8F] uppercase tracking-wider">PRAVAAH Recommendation</div>
+                    <div className="text-[12px] font-semibold text-white mt-0.5">Redirect 18% → Thane Suburban Terminal</div>
+                    <div className="text-[11px] text-[#7A96B8]">Forecast: −18 pts pressure within 15 mins</div>
                   </div>
                 </div>
-                <h3 className="text-lg font-bold text-text-primary mb-2">PREDICT</h3>
-                <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                  Understand what is happening and forecast what is likely to happen next across multi-horizon timeframes (30m, 60m, 120m, 180m).
-                </p>
               </div>
-              <div className="mt-6 pt-4 border-t border-border/60 text-[11px] font-semibold text-teal flex items-center gap-1">
-                <span>Graph Density & Propagation</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </div>
-            </div>
 
-            {/* 02 ORCHESTRATE */}
-            <div className="bg-background border border-border rounded-xl p-6 sm:p-7 flex flex-col justify-between shadow-subtle hover:border-blue/40 transition-colors">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-3xl font-black font-mono text-blue">02</span>
-                  <div className="p-2 rounded-lg bg-blue/10 text-blue">
-                    <Zap className="w-5 h-5" />
-                  </div>
-                </div>
-                <h3 className="text-lg font-bold text-text-primary mb-2">ORCHESTRATE</h3>
-                <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                  Evaluate ranked interventions, simulate pedestrian diversion corridors, and test actions with counterfactual accuracy before issuing field orders.
-                </p>
+              {/* Floating chips */}
+              <div className="absolute -bottom-4 -left-4 hidden sm:block">
+                <LiveChip label="zones monitored" value="11" color="#2D9C8F" />
               </div>
-              <div className="mt-6 pt-4 border-t border-border/60 text-[11px] font-semibold text-blue flex items-center gap-1">
-                <span>Action Impact Modeling</span>
-                <ChevronRight className="w-3.5 h-3.5" />
-              </div>
-            </div>
-
-            {/* 03 BALANCE */}
-            <div className="bg-background border border-border rounded-xl p-6 sm:p-7 flex flex-col justify-between shadow-subtle hover:border-orange/40 transition-colors">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-3xl font-black font-mono text-orange">03</span>
-                  <div className="p-2 rounded-lg bg-orange/10 text-orange">
-                    <Activity className="w-5 h-5" />
-                  </div>
-                </div>
-                <h3 className="text-lg font-bold text-text-primary mb-2">BALANCE</h3>
-                <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
-                  Measure real-time delta between forecast and observed impact, reducing pressure across railways, roads, and high-density pilgrimage nodes.
-                </p>
-              </div>
-              <div className="mt-6 pt-4 border-t border-border/60 text-[11px] font-semibold text-orange flex items-center gap-1">
-                <span>Network Stability Convergence</span>
-                <ChevronRight className="w-3.5 h-3.5" />
+              <div className="absolute -top-4 -right-4 hidden sm:block">
+                <LiveChip label="ms response" value="~200" color="#E69A2E" />
               </div>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* ── INTERACTIVE PREDICTION SECTION ───────────────────── */}
-      <section className="py-16 sm:py-24 bg-background border-b border-border/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <SectionLabel>Predictive Walkthrough</SectionLabel>
-            <SectionHeading>Anticipate Bottlenecks Before They Cascade</SectionHeading>
-            <p className="text-text-secondary text-sm sm:text-base mt-3 leading-relaxed">
-              See how PRAVAAH detects subtle velocity drops at key rail junctions and prevents severe station saturation through deterministic modeling.
-            </p>
-          </div>
-
-          <PredictionStory />
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-40 animate-bounce">
+          <div className="w-px h-8 bg-gradient-to-b from-transparent to-[#2D9C8F] rounded-full" />
         </div>
       </section>
 
-      {/* ── WHAT-IF & SCENARIOS ──────────────────────────────── */}
-      <section id="scenario-engine" className="py-16 sm:py-24 bg-surface border-b border-border/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <SectionLabel>Disruption Simulation</SectionLabel>
-            <SectionHeading>Interactive Scenario & Stress Testing</SectionHeading>
-            <p className="text-text-secondary text-sm sm:text-base mt-3 leading-relaxed">
-              What happens when Curry Road station bridge reaches capacity or a central railway signal fails? Simulate city response in real-time.
-            </p>
+      {/* ── STATS STRIP ────────────────────────────────────────── */}
+      <section className="bg-[#081D38] border-y border-[#1A4070]/50 py-12">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4 text-center">
+            <StatCard value={11} suffix="+" label="Monitored Zones" color="#2D9C8F" />
+            <StatCard value={163} suffix="K" label="Live Visitors" color="#2468B8" />
+            <StatCard value={25} suffix="+" label="Scenarios Tested" color="#E69A2E" />
+            <StatCard value={98} suffix="%" label="Prediction Accuracy" color="#2D9C8F" />
           </div>
-
-          <ScenarioDemo />
         </div>
       </section>
 
-      {/* ── BEFORE / AFTER COUNTERFACTUAL IMPACT ─────────────── */}
-      <section className="py-16 sm:py-24 bg-background border-b border-border/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <SectionLabel>Counterfactual Proof</SectionLabel>
-            <SectionHeading>Measurable Impact Before Field Commitment</SectionHeading>
-            <p className="text-text-secondary text-sm sm:text-base mt-3 leading-relaxed">
-              Compare unmanaged crowd surge against PRAVAAH-recommended routing interventions with exact deterministic telemetry.
-            </p>
-          </div>
+      {/* ── HOW IT WORKS ───────────────────────────────────────── */}
+      <section id="how-it-works" className="py-20 sm:py-28 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #2D9C8F 1px, transparent 0)', backgroundSize: '40px 40px' }} />
 
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FadeIn className="text-center max-w-2xl mx-auto mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4"
+              style={{ background: 'rgba(45,156,143,0.1)', color: '#2D9C8F', border: '1px solid rgba(45,156,143,0.3)' }}>
+              <Sparkles className="w-3 h-3" /> Core Architecture
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+              How PRAVAAH Thinks
+            </h2>
+            <p className="text-[#7A96B8] text-base mt-4 leading-relaxed">
+              A continuous intelligence loop — from signal detection to field-ready action.
+            </p>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              { num: '01', icon: TrendingUp, title: 'PREDICT', accent: '#2D9C8F', link: '/control-room/predictions',
+                desc: 'Multi-horizon crowd pressure forecasting (30m, 60m, 120m, 180m) using physics-calibrated models across 11 transit nodes.' },
+              { num: '02', icon: Zap, title: 'ORCHESTRATE', accent: '#2468B8', link: '/control-room/actions',
+                desc: 'Ranked intervention engine — evaluates diversion corridors, simulates pedestrian routing, and models counterfactual impact before issuing field orders.' },
+              { num: '03', icon: Activity, title: 'BALANCE', accent: '#E69A2E', link: '/control-room/overview',
+                desc: 'Continuous network telemetry compares forecast vs. observed, driving adaptive pressure equalization across all corridors in real time.' },
+            ].map((c, i) => (
+              <FadeIn key={i} delay={i * 120}>
+                <FeatureCard {...c} />
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── BEFORE / AFTER ─────────────────────────────────────── */}
+      <section id="impact" className="py-20 sm:py-28 bg-[#060F1E] relative">
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: 'linear-gradient(#2D9C8F 1px, transparent 1px), linear-gradient(90deg, #2D9C8F 1px, transparent 1px)', backgroundSize: '80px 80px' }} />
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FadeIn className="text-center max-w-2xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4"
+              style={{ background: 'rgba(45,156,143,0.1)', color: '#2D9C8F', border: '1px solid rgba(45,156,143,0.3)' }}>
+              <BarChart3 className="w-3 h-3" /> Counterfactual Proof
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
+              Measurable impact. Before commitment.
+            </h2>
+            <p className="text-[#7A96B8] text-base mt-4 leading-relaxed">
+              Compare unmanaged surge against PRAVAAH-guided intervention with deterministic telemetry.
+            </p>
+          </FadeIn>
           <BeforeAfter />
         </div>
       </section>
 
-      {/* ── GLASS BOX EXPLAINABILITY ─────────────────────────── */}
-      <section id="glass-box-explainability" className="py-16 sm:py-24 bg-[#0B2342] text-white border-b border-[#1A4070]/60">
+      {/* ── GLASS BOX ──────────────────────────────────────────── */}
+      <section className="py-20 sm:py-28 bg-[#081D38] border-y border-[#1A4070]/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-6 space-y-4">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#2D9C8F]/20 text-[#2D9C8F] text-[10px] font-bold uppercase tracking-widest border border-[#2D9C8F]/30">
-                <Shield className="w-3.5 h-3.5" />
-                <span>EXPLAINABLE CIVIC AI</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <FadeIn className="space-y-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest"
+                style={{ background: 'rgba(45,156,143,0.1)', color: '#2D9C8F', border: '1px solid rgba(45,156,143,0.3)' }}>
+                <Shield className="w-3 h-3" /> Explainable Civic AI
               </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
-                Why did PRAVAAH recommend this?
+              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                Why did PRAVAAH<br />recommend this?
               </h2>
-              <p className="text-sm sm:text-base text-[#CBD8E8] leading-relaxed">
-                Every algorithmic recommendation is backed by a fully inspectable <strong className="text-white">Glass Box</strong> audit log: observed telemetry, physical constraints, historical baseline, and projected impact.
+              <p className="text-[#7A96B8] text-base leading-relaxed">
+                Every recommendation comes with a fully inspectable <strong className="text-white">Glass Box</strong> audit trail — observed telemetry, physical constraints, historical baseline, and projected impact. No black box decisions.
               </p>
-              <div className="pt-2">
-                <Link
-                  to="/control-room/glass-box"
-                  className="inline-flex items-center gap-2 bg-[#12315B] hover:bg-[#1A4070] text-white text-xs font-bold px-5 py-3 rounded-lg border border-[#1A4070] transition-colors"
-                >
-                  <span>INSPECT LIVE GLASS BOX AUDIT</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#E69A2E]" />
-                </Link>
+              <div className="flex flex-wrap gap-3 pt-2">
+                {[
+                  { icon: Brain, label: 'Causal Reasoning' },
+                  { icon: Lock, label: 'Privacy Preserving' },
+                  { icon: Globe, label: 'Civic Accountability' },
+                ].map((t, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/5 border border-white/10 text-[12px] font-semibold text-[#CBD8E8]">
+                    <t.icon className="w-3.5 h-3.5 text-[#2D9C8F]" />
+                    {t.label}
+                  </div>
+                ))}
               </div>
-            </div>
+              <Link to="/control-room/glass-box"
+                className="inline-flex items-center gap-2 bg-[#2D9C8F]/10 hover:bg-[#2D9C8F]/20 border border-[#2D9C8F]/40 text-[#2D9C8F] font-bold text-sm px-5 py-3 rounded-xl transition-all duration-200 hover:border-[#2D9C8F]/80">
+                Inspect Live Audit Trail
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </FadeIn>
 
-            <div className="lg:col-span-6">
-              <div className="bg-[#081D38] border border-[#1A4070] rounded-xl p-5 sm:p-6 shadow-xl space-y-4 text-xs font-mono">
-                <div className="flex items-center justify-between border-b border-[#1A4070]/80 pb-3">
-                  <span className="text-[#7A96B8] uppercase font-bold text-[10px]">DECISION TRACE #ACT-2026-0908-01</span>
-                  <span className="text-[#2D9C8F] font-bold text-[10px] bg-[#2D9C8F]/10 px-2 py-0.5 rounded">VERIFIED</span>
+            <FadeIn delay={150}>
+              <div className="bg-[#060F1E]/80 border border-[#1A4070]/60 rounded-2xl overflow-hidden shadow-2xl font-mono text-xs">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-[#1A4070]/60 bg-[#081D38]">
+                  <span className="text-[#7A96B8] font-bold text-[10px] uppercase tracking-wider">Decision Trace · ACT-2026-0908-01</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#2D9C8F]/15 text-[#2D9C8F] border border-[#2D9C8F]/30">VERIFIED</span>
                 </div>
-                <div>
-                  <span className="text-[#7A96B8] block text-[10px] uppercase font-bold mb-1">TRIGGER EVIDENCE</span>
-                  <p className="text-[#CBD8E8] bg-[#0B2342] p-2.5 rounded border border-[#1A4070]/60">
-                    Curry Road Station footbridge ingress velocity declined to 0.4 m/s (critical threshold &lt; 0.6 m/s). Density: 4.8 pers/m².
-                  </p>
-                </div>
-                <div>
-                  <span className="text-[#7A96B8] block text-[10px] uppercase font-bold mb-1">CONSTRAINTS CHECKED</span>
-                  <ul className="text-[#CBD8E8] space-y-1 pl-3 list-disc">
-                    <li>Thane buffer corridor capacity: 62% available</li>
-                    <li>Western railway operational status: NORMAL</li>
-                  </ul>
-                </div>
-                <div>
-                  <span className="text-[#7A96B8] block text-[10px] uppercase font-bold mb-1">EXPECTED OUTCOME</span>
-                  <p className="text-[#2D9C8F] font-bold">
-                    -18 pts pressure on Curry Road within 15 mins. No secondary bottleneck created.
-                  </p>
+                <div className="p-5 space-y-4">
+                  {[
+                    { key: 'TRIGGER EVIDENCE', value: 'Curry Road footbridge ingress velocity: 0.4 m/s (critical < 0.6). Density 4.8 pers/m².', color: '#B03A2E' },
+                    { key: 'CONSTRAINTS CHECKED', value: 'Thane buffer: 62% available · Western Railway: OPERATIONAL · Vashi corridor: clear', color: '#E69A2E' },
+                    { key: 'CANDIDATES EVALUATED', value: '25 routing combinations tested via Dijkstra + side-effect penalty function', color: '#2468B8' },
+                    { key: 'EXPECTED OUTCOME', value: '−18 pts pressure on Curry Road in ≤15 min. No secondary bottleneck created.', color: '#2D9C8F' },
+                  ].map((row, i) => (
+                    <div key={i} className="space-y-1">
+                      <div className="text-[9.5px] font-bold uppercase tracking-widest" style={{ color: row.color }}>{row.key}</div>
+                      <div className="text-[#CBD8E8] bg-[#0B2342]/60 p-2.5 rounded-lg border border-[#1A4070]/40 leading-relaxed">{row.value}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            </FadeIn>
           </div>
         </div>
       </section>
 
-      {/* ── DUAL PERSPECTIVE: VISITOR & OPERATOR ─────────────── */}
-      <section className="py-16 sm:py-24 bg-surface border-b border-border/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-14">
-            <SectionLabel>Two Unified Perspectives</SectionLabel>
-            <SectionHeading>Command for Operators. Safety for Visitors.</SectionHeading>
-            <p className="text-text-secondary text-sm sm:text-base mt-3 leading-relaxed">
-              PRAVAAH synchronizes city command with citizen mobility, delivering frictionless routing to devotees while maintaining operational oversight.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto">
-            {/* Operator Card */}
-            <div className="bg-background border border-border rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-subtle">
-              <div>
-                <div className="p-3 rounded-xl bg-navy/10 text-navy w-fit mb-5">
-                  <LayoutDashboard className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-text-primary mb-2">PRAVAAH Control Room</h3>
-                <p className="text-sm text-text-secondary leading-relaxed mb-6">
-                  Complete operational oversight for municipal commissioners, transit directors, and law enforcement. Live simulation, hotspot predictions, and counterfactual action modeling.
-                </p>
-                <ul className="space-y-2.5 text-xs text-text-secondary font-medium">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-navy" />
-                    <span>Real-time Mumbai MapLibre crowd flow</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-navy" />
-                    <span>Multi-horizon predictive saturation models</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-navy" />
-                    <span>Interactive What-If disruption testing</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="pt-8">
-                <Link
-                  to="/control-room/overview"
-                  className="w-full flex items-center justify-center gap-2 bg-navy hover:bg-navy-dark text-white font-bold text-xs py-3 rounded-lg transition-colors"
-                >
-                  <span>LAUNCH CONTROL ROOM</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
+      {/* ── TWO VIEWS ──────────────────────────────────────────── */}
+      <section className="py-20 sm:py-28 bg-[#060F1E]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FadeIn className="text-center max-w-2xl mx-auto mb-14">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest mb-4"
+              style={{ background: 'rgba(45,156,143,0.1)', color: '#2D9C8F', border: '1px solid rgba(45,156,143,0.3)' }}>
+              Two Perspectives
             </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">Command for operators. Safety for visitors.</h2>
+          </FadeIn>
 
-            {/* Visitor Card */}
-            <div className="bg-background border border-border rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-subtle">
-              <div>
-                <div className="p-3 rounded-xl bg-teal/10 text-teal w-fit mb-5">
-                  <Users className="w-6 h-6" />
-                </div>
-                <h3 className="text-xl font-bold text-text-primary mb-2">Visitor Companion Experience</h3>
-                <p className="text-sm text-text-secondary leading-relaxed mb-6">
-                  Real-time crowd intelligence translated into peaceful pilgrimage guidance. Safe pedestrian routing, live queue forecasts, accommodation status, and privacy-preserving alerts.
-                </p>
-                <ul className="space-y-2.5 text-xs text-text-secondary font-medium">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-teal" />
-                    <span>Destination crowd ratings & wait-time estimates</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-teal" />
-                    <span>Low-stress alternative walking routes</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-teal" />
-                    <span>Real-time emergency & medical welfare kiosks</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="pt-8">
-                <Link
-                  to="/visitor"
-                  className="w-full flex items-center justify-center gap-2 bg-teal hover:bg-teal-dark text-white font-bold text-xs py-3 rounded-lg transition-colors"
-                >
-                  <span>EXPLORE VISITOR EXPERIENCE</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── COMPLETE PLATFORM MODULES ───────────────────────── */}
-      <section className="py-16 sm:py-24 bg-background border-b border-border/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-14">
-            <SectionLabel>Integrated Modules</SectionLabel>
-            <SectionHeading>Complete City Intelligence Matrix</SectionHeading>
-            <p className="text-text-secondary text-sm sm:text-base mt-3 leading-relaxed">
-              Unified urban telemetry covering crowd dynamics, mobility systems, hospitality capacity, and civic welfare.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
-              { title: 'LIVE CITY', desc: 'Dynamic MapLibre GIS mapping across 11 key zones with train track telemetry.', icon: Map, path: '/control-room/live-city' },
-              { title: 'PREDICTIONS', desc: 'Multi-horizon pressure forecasting and network propagation tracking.', icon: TrendingUp, path: '/control-room/predictions' },
-              { title: 'ACTIONS', desc: 'Ranked intervention engine with counterfactual impact estimates.', icon: Zap, path: '/control-room/actions' },
-              { title: 'HOSPITALITY', desc: 'Hotel inventory, bed availability, and surge accommodation buffers.', icon: Hotel, path: '/control-room/hospitality' },
-              { title: 'MOBILITY', desc: 'Suburban train load, frequency adjustments, and transit throughput.', icon: TrainFront, path: '/control-room/mobility' },
-              { title: 'WELFARE', desc: 'Emergency medical aid posts, water supply stations, and security.', icon: HeartHandshake, path: '/control-room/welfare' },
-              { title: 'SCENARIOS', desc: 'Interactive What-If disruption and disaster response simulation sandbox.', icon: FlaskConical, path: '/control-room/scenarios' },
-              { title: 'IMPACT', desc: 'Network recovery telemetry, before/after analysis, and safety indices.', icon: BarChart3, path: '/control-room/impact' },
-              { title: 'GLASS BOX', desc: 'Auditable algorithmic rationale, evidence checks, and constraint logs.', icon: Shield, path: '/control-room/glass-box' }
-            ].map((m, idx) => {
+              {
+                icon: LayoutDashboard, accent: '#2468B8', label: 'Operator',
+                title: 'PRAVAAH Control Room',
+                desc: 'Complete situational awareness for transit directors, law enforcement, and municipal commissioners. Live simulation, hotspot heatmaps, counterfactual action modeling.',
+                points: ['Real-time MapLibre crowd flow across 11 zones', 'Multi-horizon predictive saturation engine', 'Interactive What-If disruption sandbox'],
+                cta: 'Launch Control Room', link: '/control-room/overview'
+              },
+              {
+                icon: Users, accent: '#2D9C8F', label: 'Visitor',
+                title: 'Visitor Companion',
+                desc: 'City intelligence distilled into peaceful pilgrimage guidance. Safe routing, live queue estimates, accommodation status, and privacy-preserving crowd alerts.',
+                points: ['Destination crowd ratings & wait-time forecasts', 'Low-pressure alternative walking routes', 'Real-time medical & welfare kiosk locations'],
+                cta: 'Explore Visitor Guide', link: '/visitor'
+              }
+            ].map((c, i) => (
+              <FadeIn key={i} delay={i * 150}>
+                <div className="group h-full bg-[#0B2342]/60 border border-[#1A4070]/50 hover:border-opacity-100 rounded-2xl p-7 flex flex-col gap-5 transition-all duration-300 hover:shadow-2xl"
+                  style={{ '--accent': c.accent }}>
+                  <div className="flex items-start justify-between">
+                    <div className="p-3 rounded-xl" style={{ background: `${c.accent}18` }}>
+                      <c.icon className="w-6 h-6" style={{ color: c.accent }} />
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full" style={{ color: c.accent, background: `${c.accent}15`, border: `1px solid ${c.accent}30` }}>
+                      {c.label}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-white text-xl font-bold mb-2">{c.title}</h3>
+                    <p className="text-[#7A96B8] text-sm leading-relaxed">{c.desc}</p>
+                  </div>
+                  <ul className="space-y-2.5 flex-1">
+                    {c.points.map((p, j) => (
+                      <li key={j} className="flex items-start gap-2.5 text-[13px] text-[#CBD8E8]">
+                        <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: c.accent }} />
+                        {p}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to={c.link}
+                    className="w-full flex items-center justify-center gap-2 font-bold text-sm py-3.5 rounded-xl transition-all duration-200 hover:opacity-90"
+                    style={{ background: `linear-gradient(135deg, ${c.accent}, ${c.accent}cc)`, color: '#fff', boxShadow: `0 4px 20px ${c.accent}30` }}>
+                    {c.cta}
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── MODULE GRID ────────────────────────────────────────── */}
+      <section className="py-20 sm:py-24 bg-[#081D38] border-t border-[#1A4070]/40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <FadeIn className="text-center max-w-2xl mx-auto mb-12">
+            <h2 className="text-2xl sm:text-3xl font-black text-white">Complete Intelligence Matrix</h2>
+            <p className="text-[#7A96B8] text-sm mt-3">All modules unified in one command interface.</p>
+          </FadeIn>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+            {[
+              { title: 'Live City', icon: Map, path: '/control-room/live-city', accent: '#2D9C8F', desc: 'Dynamic GIS mapping across 11 zones' },
+              { title: 'Predictions', icon: TrendingUp, path: '/control-room/predictions', accent: '#2468B8', desc: 'Multi-horizon pressure forecasting' },
+              { title: 'Actions', icon: Zap, path: '/control-room/actions', accent: '#E69A2E', desc: 'Ranked intervention engine' },
+              { title: 'Hospitality', icon: Hotel, path: '/control-room/hospitality', accent: '#B03A2E', desc: 'Accommodation capacity buffers' },
+              { title: 'Mobility', icon: TrainFront, path: '/control-room/mobility', accent: '#2D9C8F', desc: 'Suburban train load & frequency' },
+              { title: 'Welfare', icon: HeartHandshake, path: '/control-room/welfare', accent: '#E69A2E', desc: 'Medical aid & civic welfare posts' },
+              { title: 'Scenarios', icon: FlaskConical, path: '/control-room/scenarios', accent: '#2468B8', desc: 'What-If disruption sandbox' },
+              { title: 'Impact', icon: BarChart3, path: '/control-room/impact', accent: '#2D9C8F', desc: 'Before/after counterfactual analysis' },
+              { title: 'Glass Box', icon: Shield, path: '/control-room/glass-box', accent: '#B03A2E', desc: 'Auditable algorithmic rationale' },
+            ].map((m, i) => {
               const Icon = m.icon
               return (
-                <Link
-                  key={idx}
-                  to={m.path}
-                  className="p-5 rounded-xl bg-surface border border-border hover:border-navy/40 transition-all group flex flex-col justify-between shadow-subtle hover:shadow-elevated"
-                >
-                  <div>
-                    <div className="p-2.5 rounded-lg bg-navy/5 text-navy group-hover:bg-navy group-hover:text-white transition-colors w-fit mb-3.5">
-                      <Icon className="w-5 h-5" />
+                <FadeIn key={i} delay={i * 50}>
+                  <Link to={m.path}
+                    className="group flex flex-col gap-3 p-4 sm:p-5 bg-[#0B2342]/60 hover:bg-[#0B2342] border border-[#1A4070]/40 hover:border-opacity-100 rounded-xl transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl"
+                    style={{ '--a': m.accent }}>
+                    <div className="p-2.5 rounded-xl w-fit transition-colors duration-200 group-hover:scale-110"
+                      style={{ background: `${m.accent}15`, color: m.accent }}>
+                      <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
-                    <h4 className="text-sm font-bold text-text-primary group-hover:text-navy transition-colors mb-1">
-                      {m.title}
-                    </h4>
-                    <p className="text-xs text-text-secondary leading-relaxed">
-                      {m.desc}
-                    </p>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-border/50 text-[11px] font-semibold text-text-muted group-hover:text-navy flex items-center gap-1">
-                    <span>Launch Module</span>
-                    <ArrowRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
-                  </div>
-                </Link>
+                    <div>
+                      <div className="text-white font-bold text-sm">{m.title}</div>
+                      <div className="text-[#7A96B8] text-[11px] mt-0.5 leading-snug">{m.desc}</div>
+                    </div>
+                    <div className="flex items-center gap-1 text-[11px] font-semibold mt-auto" style={{ color: m.accent }}>
+                      Open <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-0.5" />
+                    </div>
+                  </Link>
+                </FadeIn>
               )
             })}
           </div>
         </div>
       </section>
 
-      {/* ── FINAL PRODUCT CTA ────────────────────────────────── */}
-      <section className="py-16 sm:py-20 bg-[#0B2342] text-white text-center">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          <img
-            src="/pravaah-logo.png"
-            alt="PRAVAAH"
-            className="h-12 w-auto mx-auto object-contain"
-          />
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
-            Ready to experience PRAVAAH?
-          </h2>
-          <p className="text-base text-[#CBD8E8] max-w-2xl mx-auto leading-relaxed">
-            Explore the live Ganesh Chaturthi 2026 Mumbai command center simulation. Test real scenarios, inspect predictive models, and audit intervention decisions.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <Link
-              to="/control-room/overview"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#E69A2E] hover:bg-[#C87524] text-[#0B2342] font-bold text-sm px-8 py-4 rounded-lg shadow-elevated transition-all"
-            >
+      {/* ── FINAL CTA ──────────────────────────────────────────── */}
+      <section className="relative py-24 sm:py-32 overflow-hidden bg-[#060F1E]">
+        <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 50%, #0E2A4A 0%, #060F1E 80%)' }} />
+        <div className="absolute inset-0 opacity-[0.05]"
+          style={{ backgroundImage: 'linear-gradient(#2D9C8F 1px, transparent 1px), linear-gradient(90deg, #2D9C8F 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
+
+        <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 text-center space-y-8">
+          <div className="flex justify-center">
+            <img src="/favicon.jpg" alt="PRAVAAH" className="h-16 w-16 rounded-2xl shadow-2xl shadow-[#2D9C8F]/20" />
+          </div>
+          <div>
+            <h2 className="text-4xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+              Ready to experience<br />
+              <span style={{ background: 'linear-gradient(90deg, #2D9C8F, #38BFB0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                PRAVAAH?
+              </span>
+            </h2>
+            <p className="text-[#7A96B8] text-base mt-5 leading-relaxed max-w-xl mx-auto">
+              Explore the live Ganesh Chaturthi 2026 Mumbai command center. Test real scenarios, inspect predictive models, and audit every intervention decision.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link to="/control-room/overview"
+              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#E69A2E] to-[#F0B848] hover:from-[#C87524] hover:to-[#E69A2E] text-[#060F1E] font-black text-sm px-8 py-4 rounded-xl shadow-xl shadow-[#E69A2E]/25 transition-all duration-200 hover:scale-105">
               <LayoutDashboard className="w-4 h-4" />
-              <span>ENTER THE CONTROL ROOM</span>
+              Enter the Control Room
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </Link>
-            <Link
-              to="/visitor"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#12315B] hover:bg-[#1A4070] text-white font-semibold text-sm px-6 py-4 rounded-lg border border-[#1A4070] transition-all"
-            >
+            <Link to="/visitor"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 bg-white/5 hover:bg-white/10 border border-white/15 hover:border-white/30 text-white font-bold text-sm px-6 py-4 rounded-xl transition-all duration-200">
               <Users className="w-4 h-4 text-[#2D9C8F]" />
-              <span>EXPLORE VISITOR VIEW</span>
+              Explore Visitor View
             </Link>
           </div>
         </div>
       </section>
 
-      {/* ── RESTRAINED FOOTER ─────────────────────────────────── */}
-      <footer className="bg-[#081D38] text-[#7A96B8] border-t border-[#1A4070]/60 py-12 text-xs">
+      {/* ── FOOTER ─────────────────────────────────────────────── */}
+      <footer className="bg-[#060F1E] border-t border-[#1A4070]/40 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8 pb-8 border-b border-[#1A4070]/40">
-            <div className="space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10 pb-10 border-b border-[#1A4070]/30">
+            <div className="col-span-2 sm:col-span-1 space-y-3">
               <div className="flex items-center gap-2.5">
-                <img src="/pravaah-logo.png" alt="PRAVAAH" className="h-6 w-auto object-contain" />
-                <span className="text-white font-bold text-base tracking-tight">PRAVAAH</span>
+                <img src="/favicon.jpg" alt="PRAVAAH" className="h-8 w-8 rounded-lg object-cover" />
+                <span className="text-white font-black text-lg tracking-tight">PRAVAAH</span>
               </div>
-              <p className="text-[11px] leading-relaxed text-[#CBD8E8]/70">
-                City intelligence platform for predicting pressure, orchestrating movement, and balancing urban networks.
-              </p>
-              <span className="inline-block text-[9.5px] font-bold text-[#E69A2E] uppercase tracking-wider">
-                PREDICT · ORCHESTRATE · BALANCE
-              </span>
+              <p className="text-[#7A96B8] text-[11px] leading-relaxed">City intelligence for crowd prediction, intervention orchestration, and urban network balancing.</p>
+              <span className="text-[9px] font-bold text-[#E69A2E] uppercase tracking-widest">PREDICT · ORCHESTRATE · BALANCE</span>
             </div>
-
-            <div>
-              <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Control Room</h4>
-              <ul className="space-y-2 text-[11px]">
-                <li><Link to="/control-room/overview" className="hover:text-white transition-colors">Overview Dashboard</Link></li>
-                <li><Link to="/control-room/live-city" className="hover:text-white transition-colors">Live City GIS</Link></li>
-                <li><Link to="/control-room/predictions" className="hover:text-white transition-colors">Multi-Horizon Predictions</Link></li>
-                <li><Link to="/control-room/actions" className="hover:text-white transition-colors">Intervention Center</Link></li>
-                <li><Link to="/control-room/glass-box" className="hover:text-white transition-colors">Glass Box Rationale</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">Infrastructure & Public</h4>
-              <ul className="space-y-2 text-[11px]">
-                <li><Link to="/control-room/mobility" className="hover:text-white transition-colors">Mobility & Transit</Link></li>
-                <li><Link to="/control-room/hospitality" className="hover:text-white transition-colors">Hospitality & Beds</Link></li>
-                <li><Link to="/control-room/welfare" className="hover:text-white transition-colors">Civic Welfare Aid</Link></li>
-                <li><Link to="/control-room/scenarios" className="hover:text-white transition-colors">What-If Simulation</Link></li>
-                <li><Link to="/visitor" className="hover:text-white transition-colors">Visitor Experience Guide</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold text-xs uppercase tracking-wider mb-3">System Integrity</h4>
-              <p className="text-[11px] text-[#7A96B8] leading-relaxed mb-3">
-                Calibrated against deterministic synthetic model for Ganesh Chaturthi 2026 Mumbai festival operations. (DEMO_SEED=20260908)
-              </p>
-              <div className="flex items-center gap-2 text-[10px] text-[#2D9C8F]">
-                <span className="w-2 h-2 rounded-full bg-[#2D9C8F]"></span>
-                <span>Production Build Ready</span>
+            {[
+              { title: 'Control Room', links: [
+                { label: 'Overview', to: '/control-room/overview' },
+                { label: 'Live City GIS', to: '/control-room/live-city' },
+                { label: 'Predictions', to: '/control-room/predictions' },
+                { label: 'Actions', to: '/control-room/actions' },
+                { label: 'Glass Box', to: '/control-room/glass-box' },
+              ]},
+              { title: 'Infrastructure', links: [
+                { label: 'Mobility & Transit', to: '/control-room/mobility' },
+                { label: 'Hospitality & Beds', to: '/control-room/hospitality' },
+                { label: 'Civic Welfare', to: '/control-room/welfare' },
+                { label: 'What-If Scenarios', to: '/control-room/scenarios' },
+                { label: 'Visitor Guide', to: '/visitor' },
+              ]},
+              { title: 'Platform', links: [
+                { label: 'Impact Analysis', to: '/control-room/impact' },
+              ]},
+            ].map((col, i) => (
+              <div key={i}>
+                <h4 className="text-white font-bold text-[11px] uppercase tracking-wider mb-3">{col.title}</h4>
+                <ul className="space-y-2">
+                  {col.links.map((l, j) => (
+                    <li key={j}><Link to={l.to} className="text-[#7A96B8] hover:text-white text-[11px] transition-colors">{l.label}</Link></li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            ))}
           </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[10.5px]">
-            <p>© 2026 PRAVAAH. Urban Intelligence Platform. All rights reserved.</p>
-            <p className="text-[#7A96B8]">Designed for City Operations & Transit Command Centers</p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-[10.5px] text-[#4A6080]">
+            <p>© 2026 PRAVAAH. Urban Intelligence Platform.</p>
+            <div className="flex items-center gap-2 text-[#2D9C8F]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#2D9C8F] animate-pulse" />
+              <span>Live Simulation · Ganesh Chaturthi 2026 · Mumbai</span>
+            </div>
           </div>
         </div>
       </footer>
