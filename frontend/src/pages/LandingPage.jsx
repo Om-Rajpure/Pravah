@@ -266,113 +266,116 @@ export default function LandingPage() {
         )}
       </header>
 
-      {/* ═══ HERO SECTION (Mobile Responsive Grid) ═════════ */}
+      {/* ═══ HERO SECTION (Centered Alignment) ════════════ */}
       <PhotoSection
         img="/img-station.jpg"
-        overlay="linear-gradient(160deg, rgba(11,35,66,0.92) 0%, rgba(18,49,91,0.82) 50%, rgba(42,157,143,0.3) 100%)"
-        className="min-h-screen flex items-center pt-20 pb-12 sm:pt-24 sm:pb-16"
+        overlay="linear-gradient(160deg, rgba(11,35,66,0.94) 0%, rgba(18,49,91,0.84) 50%, rgba(42,157,143,0.32) 100%)"
+        className="min-h-screen flex items-center justify-center pt-20 pb-12 sm:pt-24 sm:pb-16"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center py-6 sm:py-12">
+        <div className="w-full py-4 sm:py-8 my-auto flex items-center">
+          <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 xl:gap-16 items-center justify-center">
 
-          {/* Left Hero Pitch */}
-          <div className="lg:col-span-6 flex flex-col justify-center space-y-5 sm:space-y-6">
-            
-            {/* Live Indicator Pill */}
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-[#2A9D8F]/20 border border-[#2A9D8F]/50 text-[#38BFB0] text-[10px] sm:text-xs font-bold uppercase tracking-wider w-fit">
-              <span className="w-2 h-2 rounded-full bg-[#38BFB0] animate-ping shrink-0" />
-              <span>Ganesh Chaturthi 2026 · Mumbai Live</span>
-            </div>
-
-            {/* Headline */}
-            <div className="space-y-1">
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight">
-                Mumbai Moves.
-              </h1>
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black leading-tight tracking-tight bg-gradient-to-r from-[#38BFB0] via-[#E69A2E] to-[#F0B848] bg-clip-text text-transparent">
-                We Keep It Flowing.
-              </h1>
-            </div>
-
-            {/* Subtitle */}
-            <p className="text-sm sm:text-base text-white/80 font-normal leading-relaxed max-w-xl">
-              PRAVAAH is a predictive, closed-loop city resilience platform that forecasts crowd bottlenecks, simulates interventions, explains decisions, and guides citizens toward less crowded routes — without individual tracking.
-            </p>
-
-            {/* Tagline Repeat */}
-            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-extrabold text-white/70">
-              <span>Predict.</span>
-              <span>Simulate.</span>
-              <span>Decide.</span>
-              <span>Act.</span>
-              <span className="text-[#E69A2E]">Repeat.</span>
-            </div>
-
-            {/* Hero CTAs */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Link
-                to="/control-room/overview"
-                className="inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#E69A2E] to-[#F0B848] text-[#0B2342] font-black text-sm px-6 py-3.5 sm:py-4 rounded-xl shadow-xl shadow-[#E69A2E]/30 hover:scale-105 transition-all text-center"
-              >
-                <LayoutDashboard className="w-4 h-4 shrink-0" />
-                <span>Enter Control Room</span>
-                <ArrowRight className="w-4 h-4 shrink-0" />
-              </Link>
-              <Link
-                to="/visitor"
-                className="inline-flex items-center justify-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold text-sm px-6 py-3.5 sm:py-4 rounded-xl backdrop-blur-sm transition-all text-center"
-              >
-                <Users className="w-4 h-4 text-[#38BFB0] shrink-0" />
-                <span>Visitor Companion</span>
-              </Link>
-            </div>
-
-            {/* Quick Metrics Strip */}
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/15">
-              {[
-                { val: '11+', label: 'Zones Monitored', color: '#38BFB0' },
-                { val: '163K', label: 'Live Devotees', color: '#E69A2E' },
-                { val: '25+', label: 'What-If Scenarios', color: '#CBD8E8' },
-              ].map((s, i) => (
-                <div key={i} className="text-left">
-                  <div className="text-lg sm:text-2xl font-black tabular-nums" style={{ color: s.color }}>{s.val}</div>
-                  <div className="text-[9px] sm:text-[10px] text-white/60 font-semibold uppercase tracking-wider">{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Dashboard Screenshot Container */}
-          <div className="lg:col-span-6 relative w-full">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-[#0B1F38]/90">
+            {/* Left Hero Pitch */}
+            <div className="lg:col-span-6 flex flex-col justify-center items-start space-y-5 sm:space-y-6 self-center">
               
-              {/* Fake Chrome Bar */}
-              <div className="bg-[#0B1F38] px-3 sm:px-4 py-2.5 flex items-center justify-between border-b border-white/10">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#B03A2E]" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#E69A2E]" />
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#2A9D8F]" />
-                  <span className="text-[10px] font-mono text-white/50 ml-2 hidden sm:inline">pravaah.city/control-room · LIVE</span>
-                </div>
-                <span className="flex items-center gap-1 text-[10px] font-bold text-[#38BFB0]">
-                  <span className="w-2 h-2 rounded-full bg-[#38BFB0] animate-ping" />
-                  TELEMETRY ACTIVE
-                </span>
+              {/* Live Indicator Pill */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#2A9D8F]/20 border border-[#2A9D8F]/50 text-[#38BFB0] text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-[#38BFB0] animate-ping shrink-0" />
+                <span>Ganesh Chaturthi 2026 · Mumbai Live</span>
               </div>
 
-              {/* Screenshot Image (Fluid & Responsive) */}
-              <img
-                src="/pravaah-hero.png"
-                alt="PRAVAAH Control Room Interface"
-                className="w-full h-auto object-cover block"
-                loading="eager"
-              />
+              {/* Headline */}
+              <div className="space-y-1">
+                <h1 className="text-3xl sm:text-5xl lg:text-5xl xl:text-6xl font-black text-white leading-[1.08] tracking-tight">
+                  Mumbai Moves.
+                </h1>
+                <h1 className="text-3xl sm:text-5xl lg:text-5xl xl:text-6xl font-black leading-[1.08] tracking-tight bg-gradient-to-r from-[#38BFB0] via-[#E69A2E] to-[#F0B848] bg-clip-text text-transparent">
+                  We Keep It Flowing.
+                </h1>
+              </div>
+
+              {/* Subtitle */}
+              <p className="text-sm sm:text-base text-white/80 font-normal leading-relaxed max-w-xl">
+                PRAVAAH is a predictive, closed-loop city resilience platform that forecasts crowd bottlenecks, simulates interventions, explains decisions, and guides citizens toward less crowded routes — without individual tracking.
+              </p>
+
+              {/* Tagline Repeat */}
+              <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-extrabold text-white/70">
+                <span>Predict.</span>
+                <span>Simulate.</span>
+                <span>Decide.</span>
+                <span>Act.</span>
+                <span className="text-[#E69A2E]">Repeat.</span>
+              </div>
+
+              {/* Hero CTAs */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-1 w-full sm:w-auto">
+                <Link
+                  to="/control-room/overview"
+                  className="inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-[#E69A2E] to-[#F0B848] text-[#0B2342] font-black text-sm px-6 py-3.5 sm:py-4 rounded-xl shadow-xl shadow-[#E69A2E]/30 hover:scale-105 transition-all text-center"
+                >
+                  <LayoutDashboard className="w-4 h-4 shrink-0" />
+                  <span>Enter Control Room</span>
+                  <ArrowRight className="w-4 h-4 shrink-0" />
+                </Link>
+                <Link
+                  to="/visitor"
+                  className="inline-flex items-center justify-center gap-2.5 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold text-sm px-6 py-3.5 sm:py-4 rounded-xl backdrop-blur-sm transition-all text-center"
+                >
+                  <Users className="w-4 h-4 text-[#38BFB0] shrink-0" />
+                  <span>Visitor Companion</span>
+                </Link>
+              </div>
+
+              {/* Quick Metrics Strip */}
+              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/15 w-full max-w-lg">
+                {[
+                  { val: '11+', label: 'Zones Monitored', color: '#38BFB0' },
+                  { val: '163K', label: 'Live Devotees', color: '#E69A2E' },
+                  { val: '25+', label: 'What-If Scenarios', color: '#CBD8E8' },
+                ].map((s, i) => (
+                  <div key={i} className="text-left">
+                    <div className="text-lg sm:text-2xl font-black tabular-nums" style={{ color: s.color }}>{s.val}</div>
+                    <div className="text-[9px] sm:text-[10px] text-white/60 font-semibold uppercase tracking-wider">{s.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Context Pill Badge */}
-            <div className="mt-3 flex items-center justify-between bg-white/10 backdrop-blur-md rounded-xl px-4 py-2 border border-white/15 text-xs text-white">
-              <span className="font-semibold">Deterministic Digital Twin</span>
-              <span className="text-tealLight font-bold">11 Monitored Hubs Active</span>
+            {/* Right Dashboard Screenshot Container */}
+            <div className="lg:col-span-6 flex flex-col justify-center items-center w-full max-w-xl lg:max-w-none mx-auto self-center">
+              <div className="w-full relative rounded-2xl overflow-hidden shadow-2xl border border-white/20 bg-[#0B1F38]/90">
+                
+                {/* Fake Chrome Bar */}
+                <div className="bg-[#0B1F38] px-3 sm:px-4 py-2.5 flex items-center justify-between border-b border-white/10">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#B03A2E]" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#E69A2E]" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#2A9D8F]" />
+                    <span className="text-[10px] font-mono text-white/50 ml-2 hidden sm:inline">pravaah.city/control-room · LIVE</span>
+                  </div>
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-[#38BFB0]">
+                    <span className="w-2 h-2 rounded-full bg-[#38BFB0] animate-ping" />
+                    TELEMETRY ACTIVE
+                  </span>
+                </div>
+
+                {/* Screenshot Image (Fluid & Responsive) */}
+                <img
+                  src="/pravaah-hero.png"
+                  alt="PRAVAAH Control Room Interface"
+                  className="w-full h-auto object-cover block"
+                  loading="eager"
+                />
+              </div>
+
+              {/* Context Pill Badge */}
+              <div className="mt-3 w-full flex items-center justify-between bg-white/10 backdrop-blur-md rounded-xl px-4 py-2 border border-white/15 text-xs text-white">
+                <span className="font-semibold">Deterministic Digital Twin</span>
+                <span className="text-tealLight font-bold">11 Monitored Hubs Active</span>
+              </div>
             </div>
+
           </div>
         </div>
       </PhotoSection>
