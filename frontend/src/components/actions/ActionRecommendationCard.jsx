@@ -28,12 +28,11 @@ export function ActionRecommendationCard({ onActionStateChange, className = '' }
       setLoading(true)
       const res = await getActionRecommendations()
       setData(res)
-      if (res.recommended_action?.status) {
+      if (res?.recommended_action?.status) {
         setSimState(res.recommended_action.status)
       }
     } catch (err) {
       console.error('Failed to fetch recommendation:', err)
-      setError('Recommendation temporarily unavailable')
     } finally {
       setLoading(false)
     }

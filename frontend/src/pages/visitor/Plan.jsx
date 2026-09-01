@@ -2,26 +2,27 @@ import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { MapPin, Bed, LifeBuoy, Clock, Navigation, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react'
 import { Button } from '../../components/ui/Button'
-import { getDestinations } from '../../services/visitorService'
+import { getDestinations, FALLBACK_DESTINATIONS } from '../../services/visitorService'
 
 export default function Plan() {
   const navigate = useNavigate()
-  const [destinations, setDestinations] = useState([])
+  const [destinations, setDestinations] = useState(FALLBACK_DESTINATIONS)
   const [selectedDestId, setSelectedDestId] = useState('lalbaugcha-raja')
 
   useEffect(() => {
     getDestinations()
-      .then(dests => setDestinations(dests || []))
+      .then(dests => {
+        if (Array.isArray(dests) && dests.length > 0) {
+          setDestinations(dests)
+        } else if (Array.isArray(dests?.destinations) && dests.destinations.length > 0) {
+          setDestinations(dests.destinations)
+        }
+      })
       .catch(console.error)
   }, [])
 
-  const selected = destinations.find(d => d.destination_id === selectedDestId) || {
-    name: 'Lalbaugcha Raja',
-    area: 'Lalbaug / Parel',
-    travel_time_min: 15,
-    crowd_level: 'HIGH',
-    crowd_label: 'Busy',
-  }
+  const safeDestinations = Array.isArray(destinations) && destinations.length > 0 ? destinations : FALLBACK_DESTINATIONS
+  const selected = safeDestinations.find(d => d.destination_id === selectedDestId) || safeDestinations[0]
 
   return (
     <div className="flex flex-col space-y-4 pt-2 max-w-2xl mx-auto w-full pb-8">
@@ -47,10 +48,10 @@ export default function Plan() {
         <select
           value={selectedDestId}
           onChange={(e) => setSelectedDestId(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-card-sm border border-border bg-background text-xs sm:text-sm font-semibold text-text-primary focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/20"
+          className="w-full px-3.5 py-2.5 rounded-card-sm border border-border bg-surface text-xs sm:text-sm font-semibold text-text-primary focus:outline-none focus:border-navy focus:ring-2 focus:ring-navy/20 cursor-pointer"
         >
-          {destinations.map(d => (
-            <option key={d.destination_id} value={d.destination_id}>
+          {safeDestinations.map(d => (
+            <option key={d.destination_id} value={d.destination_id} className="bg-surface text-text-primary py-1">
               {d.name} ({d.area}) — {d.crowd_label || d.crowd_level}
             </option>
           ))}
